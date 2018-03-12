@@ -1,3 +1,4 @@
+#include <fftw3.h>
 /* 
 Author: Christian Bailer
 Contact address: Christian.Bailer@dfki.de 
@@ -115,6 +116,15 @@ cv::Mat fftd(cv::Mat img, bool backwards)
         //cv::Mat planes[] = {cv::Mat_<double> (img), cv::Mat_<double>::zeros(img.size())};
         cv::merge(planes, 2, img);
     }
+    fftw_complex **img_signal, **img_result;
+    img_signal = (fftw_complex**) img.data;
+    img_result = (fftw_complex**) img.clone().data;
+    fftw_plan plan = fftw_plan_dft_2d(img.cols,
+                                      img.rows,
+                                      *img_signal,
+                                      *img_result,
+                                      FFTW_FORWARD,
+                                      FFTW_ESTIMATE);
     cv::dft(img, img, backwards ? (cv::DFT_INVERSE | cv::DFT_SCALE) : 0 );
 
     return img;
