@@ -1,4 +1,3 @@
-#include <fftw3.h>
 /* 
 Author: Christian Bailer
 Contact address: Christian.Bailer@dfki.de 
@@ -36,16 +35,16 @@ the use of this software, even if advised of the possibility of such damage.
 
 #pragma once
 
-//#include <cv.h>
+#include <cv.h>
 
 #ifndef _OPENCV_FFTTOOLS_HPP_
 #define _OPENCV_FFTTOOLS_HPP_
 #endif
 
 //NOTE: FFTW support is still shaky, disabled for now.
-/*#ifdef USE_FFTW
+#ifdef USE_FFTW
 #include <fftw3.h>
-#endif*/
+#endif
 
 namespace FFTTools
 {
@@ -62,8 +61,8 @@ void normalizedLogTransform(cv::Mat &img);
 
 cv::Mat fftd(cv::Mat img, bool backwards)
 {
-/*
 #ifdef USE_FFTW
+    fftw_plan_with_nthreads(4);
 
     fftw_complex * fm = (fftw_complex*) fftw_malloc(sizeof (fftw_complex) * img.cols * img.rows);
 
@@ -109,27 +108,17 @@ cv::Mat fftd(cv::Mat img, bool backwards)
     return res;
 
 #else
-*/
     if (img.channels() == 1)
     {
         cv::Mat planes[] = {cv::Mat_<float> (img), cv::Mat_<float>::zeros(img.size())};
         //cv::Mat planes[] = {cv::Mat_<double> (img), cv::Mat_<double>::zeros(img.size())};
         cv::merge(planes, 2, img);
     }
-    fftw_complex **img_signal, **img_result;
-    img_signal = (fftw_complex**) img.data;
-    img_result = (fftw_complex**) img.clone().data;
-    fftw_plan plan = fftw_plan_dft_2d(img.cols,
-                                      img.rows,
-                                      *img_signal,
-                                      *img_result,
-                                      FFTW_FORWARD,
-                                      FFTW_ESTIMATE);
     cv::dft(img, img, backwards ? (cv::DFT_INVERSE | cv::DFT_SCALE) : 0 );
 
     return img;
 
-/*#endif*/
+#endif
 
 }
 
