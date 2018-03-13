@@ -116,7 +116,7 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
             output_sigma_factor = 0.1;
 
             _labfeatures = true;
-            _labCentroids = cv::Mat(nClusters, 3, CV_32FC1, &data);
+            _labCentroids = cv::Mat(nClusters, 3, CV_64FC1, &data);
             cell_sizeQ = cell_size*cell_size;
         }
         else{
@@ -163,11 +163,14 @@ void KCFTracker::init(const cv::Rect &roi, cv::Mat image)
     _roi = roi;
     assert(roi.width >= 0 && roi.height >= 0);
     _tmpl = getFeatures(image, 1);
+    cout << "get Features" << endl;
     _prob = createGaussianPeak(size_patch[0], size_patch[1]);
-    _alphaf = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
+    cout << "create Gaussian Peak" << endl;
+    _alphaf = cv::Mat(size_patch[0], size_patch[1], CV_64FC2, float(0));
     //_num = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     //_den = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     train(_tmpl, 1.0); // train with initial frame
+    cout << "train" << endl;
  }
 // Update position based on the new frame
 cv::Rect KCFTracker::update(cv::Mat image)
@@ -232,6 +235,7 @@ cv::Point2f KCFTracker::detect(cv::Mat z, cv::Mat x, float &peak_value)
     using namespace FFTTools;
 
     cv::Mat k = gaussianCorrelation(x, z);
+    cout << "alpha:" << _alphaf.type();
     cv::Mat res = (real(fftd(complexMultiplication(_alphaf, fftd(k)), true)));
 
     //minMaxLoc only accepts doubles for the peak, and integer points for the coordinates

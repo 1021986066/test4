@@ -35,12 +35,16 @@ the use of this software, even if advised of the possibility of such damage.
 
 #pragma once
 
-#include <cv.h>
+//#include <cv.h>
+#include <opencv2/core/core.hpp>
+#include <iostream>
+using namespace std;
 
 #ifndef _OPENCV_FFTTOOLS_HPP_
 #define _OPENCV_FFTTOOLS_HPP_
 #endif
 
+#define USE_FFTW 1
 //NOTE: FFTW support is still shaky, disabled for now.
 #ifdef USE_FFTW
 #include <fftw3.h>
@@ -61,8 +65,8 @@ void normalizedLogTransform(cv::Mat &img);
 
 cv::Mat fftd(cv::Mat img, bool backwards)
 {
+    //cout << "fftd:" << sizeof(fftw_complex) << endl;
 #ifdef USE_FFTW
-    fftw_plan_with_nthreads(4);
 
     fftw_complex * fm = (fftw_complex*) fftw_malloc(sizeof (fftw_complex) * img.cols * img.rows);
 
@@ -101,9 +105,11 @@ cv::Mat fftd(cv::Mat img, bool backwards)
             //  _iout(fm[i * img.cols + j][0]);
         }
 
-    if (backwards)res *= 1.d / (float) (res.cols * res.rows);
+    if (backwards)res *= 1.0 / (float) (res.cols * res.rows);
 
+    //cout << "free p" << endl;
     fftw_free(p);
+    //cout << "free fm" << endl;
     fftw_free(fm);
     return res;
 

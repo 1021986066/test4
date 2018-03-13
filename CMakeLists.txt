@@ -15,7 +15,7 @@ SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}
 SET(OpenMP_FLAGS ${OpenMP_CXX_FLAGS})
 SET(OpenMP_LIBS gomp)
 SET(CMAKE_BUILD_TYPE "Debug") 
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -lm")
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -lm ")
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -lm")
 # Declare the target (an executable)
 include_directories( ${PROJECT_SOURCE_DIR}/include)
