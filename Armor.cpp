@@ -61,7 +61,7 @@ int Armor::run(Mat& frame)
 #if VIDEO == VIDEO_FILE
     cvtColor(frame, frame, CV_BGR2GRAY);
 #endif
-#ifdef DRAW
+#if DRAW == SHOW_ALL
 /*----------------------------------------------------------------------------
     namedWindow("Adjustion",CV_WINDOW_AUTOSIZE);
     cvCreateTrackbar("CONTOUR_AREA_MAX","Adjustion",&CONTOUR_AREA_MAX,3000);
@@ -149,7 +149,7 @@ int Armor::run(Mat& frame)
             unfound_ctr = 0;
             found_ctr = 0;
         }
-#ifdef DRAW
+#if DRAW == SHOW_ALL
         // Draw the tracked object
         rectangle(frame, bbox, Scalar(255, 0, 0), 2, 1);
         // Display frame.
@@ -170,7 +170,7 @@ void Armor::transferState(State s)
 
 void Armor::trackInit(Mat& frame)
 {
-#ifdef DRAW
+#if DRAW == SHOW_ALL
     // Display bounding box.
     rectangle(frame, bbox, Scalar(255, 0, 0), 2, 1);
     imshow("TrackInit", frame);
@@ -195,7 +195,7 @@ bool Armor::explore(Mat& frame)
 {
     static Mat bin;
     threshold(frame, bin, GRAY_THRESH, 255, THRESH_BINARY);
-#ifdef DRAW
+#if DRAW == SHOW_ALL
     imshow("gray", bin);
 #endif
     vector<int> lightx;
@@ -212,7 +212,7 @@ bool Armor::explore(Mat& frame)
         //cout << "area:" << area << endl;
         if (area > CONTOUR_AREA_MAX
                 || area < CONTOUR_AREA_MIN) {
-#  ifdef DRAW
+#  if DRAW == SHOW_ALL
             drawContours(bin, contours, i, Scalar(50), CV_FILLED);
 #  endif
             continue;
@@ -233,7 +233,7 @@ bool Armor::explore(Mat& frame)
         //cout << "a / b: " << a / b << endl;
         if (a / b > CONTOUR_HW_RATIO_MAX
                 || a / b < CONTOUR_HW_RATIO_MIN) {
-#  ifdef DRAW
+#  if DRAW == SHOW_ALL
             drawContours(bin, contours, i, Scalar(100), CV_FILLED);
 #  endif
             continue;
@@ -306,7 +306,7 @@ bool Armor::explore(Mat& frame)
                 // normal distance range in about 1 ~ 2 times of length
                 if (distance_n < TWIN_DISTANCE_N_MIN * ai || distance_n > TWIN_DISTANCE_N_MAX * ai
                     || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > TWIN_DISTANCE_N_MAX * aj) {
-#ifdef DRAW
+#if DRAW == SHOW_ALL
                     drawContours(bin, contours, i, Scalar(150), CV_FILLED);
                     drawContours(bin, contours, j, Scalar(150), CV_FILLED);
 #endif
@@ -316,7 +316,7 @@ bool Armor::explore(Mat& frame)
                 float distance_t = abs((pi.x - pj.x) * cos((angeli)*PI / 180)
                     + (pi.y - pj.y) * sin((angeli)*PI / 180));
                 if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
-#ifdef DRAW
+#if DRAW == SHOW_ALL
                     drawContours(bin, contours, i, Scalar(150), CV_FILLED);
                     drawContours(bin, contours, j, Scalar(150), CV_FILLED);
 #endif
@@ -328,7 +328,7 @@ bool Armor::explore(Mat& frame)
             }
         }
     }
-#ifdef DRAW
+#if DRAW == SHOW_ALL
     for(unsigned int i=0;i<vertices.size();++i){
       LeastSquare leastsq(vertices.at(i));
       line(bin,Point(leastsq.bh,0),Point(0,-leastsq.bh/leastsq.kh),Scalar(255,255,255),1,8);
@@ -365,7 +365,7 @@ bool Armor::explore(Mat& frame)
     bbox = Rect2d(min_x, min_y,
         max_x - min_x, max_y - min_y);
     total_contour_area = areas.at(light1) + areas.at(light2);
-#ifdef DRAW
+#if DRAW == SHOW_ALL
     rectangle(bin, bbox, Scalar(255), 3);
     imshow("gray", bin);
 #endif

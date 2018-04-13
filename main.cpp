@@ -14,11 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+//Precompile paramaters
+#include "precom.h"
 #include "Armor.h"
 //wrapper for Global Shutter Camera
 #include "GlobalCamera.h"
-//Precompile paramaters
-#include "precom.h"
 
 #include <iostream>
 #include <opencv2/core/core.hpp>
@@ -47,7 +47,7 @@ int main(void)
     }
 #endif
 #if VIDEO == VIDEO_FILE
-    video.open("/home/jachinshen/Videos/Global1.avi");
+    video.open("/home/jachinshen/Videos/Robo/station-infanity/fartoclose.avi");
     if (video.isOpened())
         cout << "Open Video Successfully!" << endl;
     else {
@@ -61,7 +61,7 @@ int main(void)
 
 // use 2 frames for parallel process
 // when loading picture from camera to frame1, process frame2
-#ifdef OPENMP_SWITCH
+#if OPENMP_SWITCH == OPENMP_RUN
     Mat frame1, frame2;
     bool ok = true;
 
@@ -105,6 +105,7 @@ int main(void)
     Mat frame;
     while (video.read(frame)) {
         armor.run(frame);
+        cv::waitKey(1);
     }
     cout << "End!" << endl;
 #endif
