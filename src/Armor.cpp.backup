@@ -33,17 +33,17 @@ void Armor::init()
     GRAY_THRESH = 235;
 
     // select contours
-    CONTOUR_AREA_MIN = 2;//20
-    CONTOUR_AREA_MAX = 2000;//2000
-    CONTOUR_LENGTH_MIN = 10;//20
-    CONTOUR_HW_RATIO_MIN = 1.0;//2.5
+    CONTOUR_AREA_MIN = 20;
+    CONTOUR_AREA_MAX = 2000;
+    CONTOUR_LENGTH_MIN = 20;
+    CONTOUR_HW_RATIO_MIN = 2.5;
     CONTOUR_HW_RATIO_MAX = 15;
 
     // pair lights
     TWIN_ANGEL_MAX = 5.001;
     TWIN_LENGTH_RATIO_MAX = 1.2;
-    TWIN_DISTANCE_N_MIN = 0.5;//1.7
-    TWIN_DISTANCE_N_MAX = 3.8;//3.8
+    TWIN_DISTANCE_N_MIN = 1.7;
+    TWIN_DISTANCE_N_MAX = 3.8;
     TWIN_DISTANCE_T_MAX = 1.4;
 
     // state machine
@@ -61,19 +61,7 @@ int Armor::run(Mat& frame)
 #if VIDEO == VIDEO_FILE
     cvtColor(frame, frame, CV_BGR2GRAY);
 #endif
-#if DRAW == SHOW_ALL
-/*----------------------------------------------------------------------------
-    namedWindow("Adjustion",CV_WINDOW_AUTOSIZE);
-    cvCreateTrackbar("CONTOUR_AREA_MAX","Adjustion",&CONTOUR_AREA_MAX,3000);
-    cvCreateTrackbar("CONTOUR_AREA_MIN","Adjustion",&CONTOUR_AREA_MIN,30);
-    cvCreateTrackbar("CONTOUR_LENGTH_MIN","Adjustion",&CONTOUR_LENGTH_MIN,30);
-    cvCreateTrackbar("CONTOUR_AREA_MIN","Adjustion",&CONTOUR_HW_RATIO_MIN,3.0);
-    cvCreateTrackbar("CONTOUR_AREA_MIN","Adjustion",&CONTOUR_HW_RATIO_MIN,3.0);
-    cvCreateTrackbar("CONTOUR_AREA_MIN","Adjustion",&CONTOUR_HW_RATIO_MAX,20);
-    cvCreateTrackbar("CONTOUR_AREA_MIN","Adjustion",&TWIN_DISTANCE_N_MIN,1.5);
-    cvCreateTrackbar("CONTOUR_AREA_MIN","Adjustion",&TWIN_DISTANCE_N_MAX,4.0);
-----------------------------------------------------------------------------*/
-    //line(frame,Point(0,100),Point(100,0),Scalar(255,255,255),1,8);
+#if DRAW == SHOW_ALL 
     imshow("frame", frame);
 #endif
 
@@ -104,10 +92,10 @@ int Armor::run(Mat& frame)
         transferState(TRACK);
     } else if (state == TRACK) {
         if (track(frame)) {
-/*            float fps = 1 / (tic() - timer);
+            float fps = 1 / (tic() - timer);
             cout << "fps: " << fps << endl;
             timer = tic();
-*/
+
             int x = bbox.x + bbox.width / 2;
             int y = bbox.y + bbox.height / 2;
             int x_last = bbox_last.x + bbox_last.width / 2;
@@ -149,17 +137,14 @@ int Armor::run(Mat& frame)
             unfound_ctr = 0;
             found_ctr = 0;
         }
-#if DRAW == SHOW_ALL
+#if DRAW == SHOW_ALL 
         // Draw the tracked object
         rectangle(frame, bbox, Scalar(255, 0, 0), 2, 1);
         // Display frame.
         imshow("Tracking", frame);
-        //waitKey(0);
+        waitKey(1);
 #endif
     }
-    float fps = 1 / (tic() - timer);
-    cout << "fps: " << fps << endl;
-    timer = tic();
     return 0;
 }
 
@@ -170,7 +155,7 @@ void Armor::transferState(State s)
 
 void Armor::trackInit(Mat& frame)
 {
-#if DRAW == SHOW_ALL
+#if DRAW == SHOW_ALL 
     // Display bounding box.
     rectangle(frame, bbox, Scalar(255, 0, 0), 2, 1);
     imshow("TrackInit", frame);
@@ -195,26 +180,23 @@ bool Armor::explore(Mat& frame)
 {
     static Mat bin;
     threshold(frame, bin, GRAY_THRESH, 255, THRESH_BINARY);
-#if DRAW == SHOW_ALL
+#if DRAW == SHOW_ALL 
     imshow("gray", bin);
 #endif
-    vector<int> lightx;
-    vector<int> lighty;
     vector<vector<Point> > contours;
     vector<RotatedRect> lights;
     vector<long> areas;
-    vector<vector<Point> > vertices;
     findContours(bin, contours,
-        CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
+        CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     //select contours by area, length, width/height
     for (unsigned int i = 0; i < contours.size(); ++i) {
         long area = contourArea(contours.at(i));
         //cout << "area:" << area << endl;
         if (area > CONTOUR_AREA_MAX
                 || area < CONTOUR_AREA_MIN) {
-#  if DRAW == SHOW_ALL
+#if DRAW == SHOW_ALL 
             drawContours(bin, contours, i, Scalar(50), CV_FILLED);
-#  endif
+#endif
             continue;
         }
         RotatedRect rec = minAreaRect(contours.at(i));
@@ -233,12 +215,11 @@ bool Armor::explore(Mat& frame)
         //cout << "a / b: " << a / b << endl;
         if (a / b > CONTOUR_HW_RATIO_MAX
                 || a / b < CONTOUR_HW_RATIO_MIN) {
-#  if DRAW == SHOW_ALL
+#if DRAW == SHOW_ALL 
             drawContours(bin, contours, i, Scalar(100), CV_FILLED);
-#  endif
+#endif
             continue;
         }
-        vertices.push_back(contours.at(i));
         lights.push_back(rec);
         areas.push_back(area);
     }
@@ -263,50 +244,21 @@ bool Armor::explore(Mat& frame)
             if (ai / aj > TWIN_LENGTH_RATIO_MAX
                     || aj / ai > TWIN_LENGTH_RATIO_MAX)
                 continue;
-//Using function fitLine to fitting
-/*
-            Vec4f line_parai, line_paraj;
-            fitLine(vertices.at(i),line_parai,DIST_L2, 0, 1e-2, 1e-2);
-            fitLine(vertices.at(j),line_paraj,DIST_L2, 0, 1e-2, 1e-2);
-            if(abs(line_parai[0]/line_parai[1])>=0.00001 &&abs(line_paraj[0]/line_paraj[1])>=0.00001){
-                double ki=line_parai[1]/line_parai[0];
-                double kj=line_paraj[1]/line_paraj[0];
-                angel_i=atan(ki)*180/PI;
-                angel_j=atan(kj)*180/PI;
-                cout << "line_parai = " << line_parai <<" ki "<<ki <<" "<<angel_i<<endl;
-                cout << "line_paraj = " << line_paraj <<" kj "<<kj <<" "<<angel_j<<endl;
-            }
-            else{
-                angel_i=90;
-                angel_j=90;
-                cout <<"ki -> infty 90"<<endl;
-                cout <<"kj -> infty 90"<<endl;
-            }
-*/
-//Using function LeastSquare to fitting
-            LeastSquare leastsqi(vertices.at(i));
-            angel_i=leastsqi.getfinalangle();
-            //leastsqi.getline();
-            LeastSquare leastsqj(vertices.at(j));
-            angel_j=leastsqj.getfinalangle();
-            //leastsqj.getline();
-            cout << "angel_i"<<angel_i<<endl;
-            cout << "angel_j"<<angel_j<<endl;
+
             // angel parallel
             float angeli = lights.at(i).angle;
             float angelj = lights.at(j).angle;
-            //cout<<"light(i) angle:"<<angeli<<" light(j) angle"<<angelj<<endl;
             if (sizei.width < sizei.height)
                 angeli += 90.0;
             if (sizej.width < sizej.height)
                 angelj += 90.0;
-            if (abs(angel_i - angel_j) < min_angel) {
+            if (abs(angeli - angelj) < min_angel) {
                 float distance_n = abs((pi.x - pj.x) * cos((angeli + 90) * PI / 180)
                     + (pi.y - pj.y) * sin((angeli + 90) * PI / 180));
                 // normal distance range in about 1 ~ 2 times of length
                 if (distance_n < TWIN_DISTANCE_N_MIN * ai || distance_n > TWIN_DISTANCE_N_MAX * ai
                     || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > TWIN_DISTANCE_N_MAX * aj) {
-#if DRAW == SHOW_ALL
+#if DRAW == SHOW_ALL 
                     drawContours(bin, contours, i, Scalar(150), CV_FILLED);
                     drawContours(bin, contours, j, Scalar(150), CV_FILLED);
 #endif
@@ -316,7 +268,7 @@ bool Armor::explore(Mat& frame)
                 float distance_t = abs((pi.x - pj.x) * cos((angeli)*PI / 180)
                     + (pi.y - pj.y) * sin((angeli)*PI / 180));
                 if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
-#if DRAW == SHOW_ALL
+#if DRAW == SHOW_ALL 
                     drawContours(bin, contours, i, Scalar(150), CV_FILLED);
                     drawContours(bin, contours, j, Scalar(150), CV_FILLED);
 #endif
@@ -328,12 +280,6 @@ bool Armor::explore(Mat& frame)
             }
         }
     }
-#if DRAW == SHOW_ALL
-    for(unsigned int i=0;i<vertices.size();++i){
-      LeastSquare leastsq(vertices.at(i));
-      line(bin,Point(leastsq.bh,0),Point(0,-leastsq.bh/leastsq.kh),Scalar(255,255,255),1,8);
-    }
-#endif
     if (light1 == -1 || light2 == -1 || min_angel == TWIN_ANGEL_MAX)
         return false;
     //cout << "min i:" << light1 << " j:" << light2 << " angel:" << min_angel << endl;
@@ -365,7 +311,7 @@ bool Armor::explore(Mat& frame)
     bbox = Rect2d(min_x, min_y,
         max_x - min_x, max_y - min_y);
     total_contour_area = areas.at(light1) + areas.at(light2);
-#if DRAW == SHOW_ALL
+#if DRAW == SHOW_ALL 
     rectangle(bin, bbox, Scalar(255), 3);
     imshow("gray", bin);
 #endif
