@@ -304,6 +304,7 @@ bool Armor::explore(Mat& frame)
                 float distance_n = abs((pi.x - pj.x) * cos((angeli + 90) * PI / 180)
                     + (pi.y - pj.y) * sin((angeli + 90) * PI / 180));
                 // normal distance range in about 1 ~ 2 times of length
+                // TODO: add the large armor on hero, which should be 3 ~ 4 times of length. Maybe negative influence on small armor detection.
                 if (distance_n < TWIN_DISTANCE_N_MIN * ai || distance_n > TWIN_DISTANCE_N_MAX * ai
                     || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > TWIN_DISTANCE_N_MAX * aj) {
 #if DRAW == SHOW_ALL
