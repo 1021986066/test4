@@ -21,6 +21,10 @@ limitations under the License.
 #include "GlobalCamera.h"
 
 #include <iostream>
+#include <fstream>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -37,6 +41,25 @@ int main(void)
     VideoCapture video;
 #endif
 
+#if RECORD == RECORD_ON
+fstream video_file;
+video_file.open("../hello.txt", ios::in );
+string video_id_str;
+video_file >> video_id_str;
+video_file.close();
+
+video_file.open("../hello.txt", ios::out );
+int video_id = stoi(video_id_str) + 1;
+video_file << video_id ;
+video_file.close();
+
+string file_name = string(getpwuid(getuid())->pw_dir) 
+    + "/Videos/Record" + video_id_str + ".avi";
+cout << "File name: " << file_name << endl;
+VideoWriter g_writer;
+g_writer.open(file_name, CV_FOURCC('P', 'I', 'M', '1'), 120,
+              cv::Size(640, 480), 0);
+#endif
 // Read video
 #if VIDEO == VIDEO_CAMERA
     if (video.init() == 0) {
@@ -47,7 +70,7 @@ int main(void)
     }
 #endif
 #if VIDEO == VIDEO_FILE
-    video.open("/home/jachinshen/Videos/Robo/station-infanity/rotate.avi");
+    video.open("/home/jachinshen/Videos/Robo/station-infanity/fartoclose_light.avi");
     if (video.isOpened())
         cout << "Open Video Successfully!" << endl;
     else {
@@ -67,45 +90,59 @@ int main(void)
 
     video.read(frame2);
     while (ok) {
-#   pragma omp parallel sections num_threads(2)
+#       pragma omp parallel sections 
         {
-#       pragma omp section
+#           pragma omp section
             {
                 video.read(frame1);
             }
-#       pragma omp section
+#           pragma omp section
             {
                 if (armor.run(frame2) < 0) {
                     cout << "Error!" << endl;
                     ok = false;
                 }
             }
+#           if RECORD == RECORD_ON
+#           pragma omp section
+            {
+                g_writer.write(frame2);
+            }
+#           endif
         }
-
 // wait for both section completed
-#   pragma omp barrier
-
-#   pragma omp parallel sections num_threads(2)
+#       pragma omp barrier
+/*****************************************/
+#       pragma omp parallel sections
         {
-#       pragma omp section
+#           pragma omp section
             {
                 video.read(frame2);
             }
-#       pragma omp section
+#           pragma omp section
             {
                 if (armor.run(frame1) < 0) {
                     cout << "Error!" << endl;
                     ok = false;
                 }
             }
+#           if RECORD == RECORD_ON
+#           pragma omp section
+            {
+                g_writer.write(frame1);
+            }
+#           endif
         }
-#   pragma omp barrier
+#       pragma omp barrier
     }
-#else
+#   else
     Mat frame;
     while (video.read(frame)) {
         armor.run(frame);
         cv::waitKey(1);
+#       if RECORD == RECORD_ON
+        g_writer.write(frame);
+#       endif
     }
     cout << "End!" << endl;
 #endif

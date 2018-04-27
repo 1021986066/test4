@@ -38,7 +38,7 @@ void Armor::init()
     GRAY_THRESH   = 235;
 
     // select contours
-    CONTOUR_AREA_MIN     = 2;//20
+    CONTOUR_AREA_MIN     = 5;//20
     CONTOUR_AREA_MAX     = 2000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
     CONTOUR_HW_RATIO_MIN = 1.0;//2.5
