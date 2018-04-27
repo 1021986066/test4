@@ -8,7 +8,7 @@ double tic()
 
 // sort lights by x
 bool less_x(const Light & m1, const Light & m2) {
-        return m1.rect.center.x < m2.rect.center.x;
+    return m1.rect.center.x < m2.rect.center.x;
 }
 
 Armor::Armor()
@@ -25,7 +25,7 @@ void Armor::init()
     // state machine
     state = EXPLORE;
 
-    found_ctr = 0;
+    found_ctr   = 0;
     unfound_ctr = 0;
 
     srcW = 640;
@@ -33,30 +33,30 @@ void Armor::init()
 
     // track
     BORDER_IGNORE = 10;
-    BOX_EXTRA = 10;
+    BOX_EXTRA     = 10;
 
-    GRAY_THRESH = 235;
+    GRAY_THRESH   = 235;
 
     // select contours
-    CONTOUR_AREA_MIN = 2;//20
-    CONTOUR_AREA_MAX = 2000;//2000
-    CONTOUR_LENGTH_MIN = 10;//20
+    CONTOUR_AREA_MIN     = 2;//20
+    CONTOUR_AREA_MAX     = 2000;//2000
+    CONTOUR_LENGTH_MIN   = 10;//20
     CONTOUR_HW_RATIO_MIN = 1.0;//2.5
     CONTOUR_HW_RATIO_MAX = 15;
 
     // pair lights
-    TWIN_ANGEL_MAX = 5.001;
+    TWIN_ANGEL_MAX        = 5.001;
     TWIN_LENGTH_RATIO_MAX = 1.5;
-    TWIN_DISTANCE_N_MIN = 1.6;//1.7
-    TWIN_DISTANCE_N_MAX = 3.8;//3.8
-    TWIN_DISTANCE_T_MAX = 1.4;
+    TWIN_DISTANCE_N_MIN   = 1.6;//1.7
+    TWIN_DISTANCE_N_MAX   = 3.8;//3.8
+    TWIN_DISTANCE_T_MAX   = 1.4;
 
     // state machine
-    EXPLORE_TRACK_THRES = 2;
+    EXPLORE_TRACK_THRES     = 2;
     EXPLORE_SEND_STOP_THRES = 5;
-    TRACK_CHECK_THRES = 3;
-    TRACK_CHECK_RATIO = 0.4;
-    TRACK_EXPLORE_THRES = 2;
+    TRACK_CHECK_THRES       = 3;
+    TRACK_CHECK_RATIO       = 0.4;
+    TRACK_EXPLORE_THRES     = 2;
 }
 
 int Armor::run(Mat& frame)
@@ -95,13 +95,13 @@ int Armor::run(Mat& frame)
             serial.sendTarget((bbox.x + bbox.width / 2),
                     (bbox.y + bbox.height / 2), FOUND_BORDER);
             transferState(TRACK_INIT);
-            found_ctr = 0;
+            found_ctr   = 0;
             unfound_ctr = 0;
-            bbox_last = bbox;
+            bbox_last   = bbox;
         }
         if (unfound_ctr >= EXPLORE_SEND_STOP_THRES) {
             serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND);
-            found_ctr = 0;
+            found_ctr   = 0;
             unfound_ctr = 0;
         }
     } else if (state == TRACK_INIT) {
@@ -113,10 +113,9 @@ int Armor::run(Mat& frame)
             cout << "fps: " << fps << endl;
             timer = tic();
 */
-            int x = bbox.x + bbox.width / 2;
-            int y = bbox.y + bbox.height / 2;
-            int x_last = bbox_last.x + bbox_last.width / 2;
-            //int y_last = bbox_last.y + bbox_last.height / 2;
+            int x        = bbox.x + bbox.width / 2;
+            int y        = bbox.y + bbox.height / 2;
+            int x_last   = bbox_last.x + bbox_last.width / 2;
             int center_x = 2 * x - srcW / 2;
             int center_y = 2 * y - srcH / 2;
             // Assume the box run at const velocity
@@ -132,7 +131,7 @@ int Armor::run(Mat& frame)
             }
             ++found_ctr;
             unfound_ctr = 0;
-            bbox_last = bbox;
+            bbox_last   = bbox;
         } else {
             ++unfound_ctr;
             found_ctr = 0;
@@ -144,7 +143,7 @@ int Armor::run(Mat& frame)
             threshold(roi, roi, GRAY_THRESH, 255, THRESH_BINARY);
             if (countNonZero(roi) < TRACK_CHECK_RATIO * total_contour_area) {
                 transferState(EXPLORE);
-                found_ctr = 0;
+                found_ctr   = 0;
                 unfound_ctr = 0;
             }
         }
@@ -152,14 +151,13 @@ int Armor::run(Mat& frame)
         if (unfound_ctr >= TRACK_EXPLORE_THRES) {
             transferState(EXPLORE);
             unfound_ctr = 0;
-            found_ctr = 0;
+            found_ctr   = 0;
         }
 #if DRAW == SHOW_ALL
         // Draw the tracked object
         rectangle(frame, bbox, Scalar(255, 0, 0), 2, 1);
         // Display frame.
         imshow("Tracking", frame);
-        //waitKey(0);
 #endif
     }
     float fps = 1 / (tic() - timer);
@@ -203,8 +201,6 @@ bool Armor::explore(Mat& frame)
 #if DRAW == SHOW_ALL
     imshow("gray", bin);
 #endif
-    vector<int> lightx;
-    vector<int> lighty;
     vector<vector<Point> > contours;
     vector<long> areas;
     vector<Light> lights;
@@ -222,7 +218,7 @@ bool Armor::explore(Mat& frame)
             continue;
         }
         RotatedRect rec = minAreaRect(contours.at(i));
-        Size2f size = rec.size;
+        Size2f size     = rec.size;
         // get a (longer) as length
         float a = size.height > size.width
             ? size.height
@@ -255,9 +251,9 @@ bool Armor::explore(Mat& frame)
     // cout << "lights: " << lights.size() << endl;
     // pair lights by length, distance, angel
     for (unsigned int i = 0; i < lights.size()-1; ++i) {
-        int j=i+1;
-        Point2f pi = lights.at(i).rect.center;
-        Point2f pj = lights.at(j).rect.center;
+        int j = i + 1;
+        Point2f pi   = lights.at(i).rect.center;
+        Point2f pj   = lights.at(j).rect.center;
         Size2f sizei = lights.at(i).rect.size;
         Size2f sizej = lights.at(j).rect.size;
         float ai = sizei.height > sizei.width
@@ -274,13 +270,13 @@ bool Armor::explore(Mat& frame)
 
         //Using function LeastSquare to fitting
         LeastSquare leastsqi(lights.at(i).contour);
-        angel_i=leastsqi.getFinalAngle();
+        angel_i = leastsqi.getFinalAngle();
         //leastsqi.getline();
         LeastSquare leastsqj(lights.at(j).contour);
-        angel_j=leastsqj.getFinalAngle();
+        angel_j = leastsqj.getFinalAngle();
         //leastsqj.getline();
-        cout << "angel_i"<<angel_i<<endl;
-        cout << "angel_j"<<angel_j<<endl;
+        cout << "angel_i" << angel_i << endl;
+        cout << "angel_j" << angel_j << endl;
         if (abs(angel_i - angel_j) < min_angel) {
             float distance_n = abs((pi.x - pj.x) * cos((angel_i + 90) * PI / 180)
                 + (pi.y - pj.y) * sin((angel_i + 90) * PI / 180));
@@ -306,17 +302,18 @@ bool Armor::explore(Mat& frame)
 #endif
                 continue;
             }
-            light1 = i;
-            light2 = j;
+            light1    = i;
+            light2    = j;
             min_angel = abs(angel_i - angel_j);
         }
     }
 #if DRAW == SHOW_ALL
     //cout << "Draw lines" << lights.size() << endl;
-    for(unsigned int i=0;i<lights.size();++i){
+    for(unsigned int i = 0;i < lights.size(); ++i){
       LeastSquare leastsq(lights.at(i).contour);
       // TODO: sometimes the line is drawed out the image
-      line(bin,Point(leastsq.bh,0),Point(0,-leastsq.bh/leastsq.kh),Scalar(255,255,255),1,8);
+      line(bin,Point(leastsq.bh,0),Point(0,-leastsq.bh/leastsq.kh),
+              Scalar(255,255,255),1,8);
       //cout << "Point1: " << leastsq.bh << " 0" << endl; 
       //cout << "Point2: 0 " << -leastsq.bh / leastsq.kh << endl;
     }
