@@ -6,6 +6,11 @@ double tic()
     return ((float)t.tv_sec + ((float)t.tv_usec) / 1000000.);
 }
 
+// sort lights by x
+bool less_x(const Light & m1, const Light & m2) {
+        return m1.rect.center.x < m2.rect.center.x;
+}
+
 Armor::Armor()
     : tracker(false, true, false, false){};
 
@@ -41,8 +46,8 @@ void Armor::init()
 
     // pair lights
     TWIN_ANGEL_MAX = 5.001;
-    TWIN_LENGTH_RATIO_MAX = 1.2;
-    TWIN_DISTANCE_N_MIN = 0.5;//1.7
+    TWIN_LENGTH_RATIO_MAX = 1.5;
+    TWIN_DISTANCE_N_MIN = 1.6;//1.7
     TWIN_DISTANCE_N_MAX = 3.8;//3.8
     TWIN_DISTANCE_T_MAX = 1.4;
 
@@ -201,9 +206,8 @@ bool Armor::explore(Mat& frame)
     vector<int> lightx;
     vector<int> lighty;
     vector<vector<Point> > contours;
-    vector<RotatedRect> lights;
     vector<long> areas;
-    vector<vector<Point> > vertices;
+    vector<Light> lights;
     findContours(bin, contours,
         CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
     //select contours by area, length, width/height
@@ -226,6 +230,7 @@ bool Armor::explore(Mat& frame)
         float b = size.height < size.width
             ? size.height
             : size.width;
+        //cout << "length: " << a << endl;
         if (a < CONTOUR_LENGTH_MIN) {
             continue;
         }
@@ -238,109 +243,91 @@ bool Armor::explore(Mat& frame)
 #  endif
             continue;
         }
-        vertices.push_back(contours.at(i));
-        lights.push_back(rec);
+        //cout << "push back" << endl;
+        lights.push_back(Light(rec, contours[i]));
         areas.push_back(area);
     }
     if (lights.size() < 2)
         return false;
     int light1 = -1, light2 = -1;
     float min_angel = TWIN_ANGEL_MAX;
+    sort(lights.begin(), lights.end(), less_x);
+    // cout << "lights: " << lights.size() << endl;
     // pair lights by length, distance, angel
-    for (unsigned int i = 0; i < lights.size(); ++i) {
-        for (unsigned int j = i + 1; j < lights.size(); ++j) {
-            Point2f pi = lights.at(i).center;
-            Point2f pj = lights.at(j).center;
-            Size2f sizei = lights.at(i).size;
-            Size2f sizej = lights.at(j).size;
-            float ai = sizei.height > sizei.width
-                ? sizei.height
-                : sizei.width;
-            float aj = sizej.height > sizej.width
-                ? sizej.height
-                : sizej.width;
-            // length similar
-            if (ai / aj > TWIN_LENGTH_RATIO_MAX
-                    || aj / ai > TWIN_LENGTH_RATIO_MAX)
+    for (unsigned int i = 0; i < lights.size()-1; ++i) {
+        int j=i+1;
+        Point2f pi = lights.at(i).rect.center;
+        Point2f pj = lights.at(j).rect.center;
+        Size2f sizei = lights.at(i).rect.size;
+        Size2f sizej = lights.at(j).rect.size;
+        float ai = sizei.height > sizei.width
+            ? sizei.height
+            : sizei.width;
+        float aj = sizej.height > sizej.width
+            ? sizej.height
+            : sizej.width;
+        // length similar
+        //cout << "Twin length: " << ai/aj << endl;
+        if (ai / aj > TWIN_LENGTH_RATIO_MAX
+                || aj / ai > TWIN_LENGTH_RATIO_MAX)
+            continue;
+
+        //Using function LeastSquare to fitting
+        LeastSquare leastsqi(lights.at(i).contour);
+        angel_i=leastsqi.getFinalAngle();
+        //leastsqi.getline();
+        LeastSquare leastsqj(lights.at(j).contour);
+        angel_j=leastsqj.getFinalAngle();
+        //leastsqj.getline();
+        cout << "angel_i"<<angel_i<<endl;
+        cout << "angel_j"<<angel_j<<endl;
+        if (abs(angel_i - angel_j) < min_angel) {
+            float distance_n = abs((pi.x - pj.x) * cos((angel_i + 90) * PI / 180)
+                + (pi.y - pj.y) * sin((angel_i + 90) * PI / 180));
+            // normal distance range in about 1 ~ 2 times of length
+            // cout << "Distance n: " << distance_n / ai << endl;
+            // add the large armor on hero, which should be 3 ~ 4 times of length. Maybe negative influence on small armor detection.
+            if (distance_n < TWIN_DISTANCE_N_MIN * ai || distance_n > 2 * TWIN_DISTANCE_N_MAX * ai
+                || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > 2 * TWIN_DISTANCE_N_MAX * aj) {
+#if DRAW == SHOW_ALL
+                drawContours(bin, contours, i, Scalar(150), CV_FILLED);
+                drawContours(bin, contours, j, Scalar(150), CV_FILLED);
+#endif
                 continue;
-//Using function fitLine to fitting
-/*
-            Vec4f line_parai, line_paraj;
-            fitLine(vertices.at(i),line_parai,DIST_L2, 0, 1e-2, 1e-2);
-            fitLine(vertices.at(j),line_paraj,DIST_L2, 0, 1e-2, 1e-2);
-            if(abs(line_parai[0]/line_parai[1])>=0.00001 &&abs(line_paraj[0]/line_paraj[1])>=0.00001){
-                double ki=line_parai[1]/line_parai[0];
-                double kj=line_paraj[1]/line_paraj[0];
-                angel_i=atan(ki)*180/PI;
-                angel_j=atan(kj)*180/PI;
-                cout << "line_parai = " << line_parai <<" ki "<<ki <<" "<<angel_i<<endl;
-                cout << "line_paraj = " << line_paraj <<" kj "<<kj <<" "<<angel_j<<endl;
             }
-            else{
-                angel_i=90;
-                angel_j=90;
-                cout <<"ki -> infty 90"<<endl;
-                cout <<"kj -> infty 90"<<endl;
-            }
-*/
-//Using function LeastSquare to fitting
-            LeastSquare leastsqi(vertices.at(i));
-            angel_i=leastsqi.getfinalangle();
-            //leastsqi.getline();
-            LeastSquare leastsqj(vertices.at(j));
-            angel_j=leastsqj.getfinalangle();
-            //leastsqj.getline();
-            cout << "angel_i"<<angel_i<<endl;
-            cout << "angel_j"<<angel_j<<endl;
-            // angel parallel
-            float angeli = lights.at(i).angle;
-            float angelj = lights.at(j).angle;
-            //cout<<"light(i) angle:"<<angeli<<" light(j) angle"<<angelj<<endl;
-            if (sizei.width < sizei.height)
-                angeli += 90.0;
-            if (sizej.width < sizej.height)
-                angelj += 90.0;
-            if (abs(angel_i - angel_j) < min_angel) {
-                float distance_n = abs((pi.x - pj.x) * cos((angeli + 90) * PI / 180)
-                    + (pi.y - pj.y) * sin((angeli + 90) * PI / 180));
-                // normal distance range in about 1 ~ 2 times of length
-                // TODO: add the large armor on hero, which should be 3 ~ 4 times of length. Maybe negative influence on small armor detection.
-                if (distance_n < TWIN_DISTANCE_N_MIN * ai || distance_n > TWIN_DISTANCE_N_MAX * ai
-                    || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > TWIN_DISTANCE_N_MAX * aj) {
+            // direction distance should be small
+            float distance_t = abs((pi.x - pj.x) * cos((angel_i)*PI / 180)
+                + (pi.y - pj.y) * sin((angel_i)*PI / 180));
+            //cout << "Distance t: " << distance_t / ai << endl;
+            if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
 #if DRAW == SHOW_ALL
-                    drawContours(bin, contours, i, Scalar(150), CV_FILLED);
-                    drawContours(bin, contours, j, Scalar(150), CV_FILLED);
+                drawContours(bin, contours, i, Scalar(150), CV_FILLED);
+                drawContours(bin, contours, j, Scalar(150), CV_FILLED);
 #endif
-                    continue;
-                }
-                // direction distance should be small
-                float distance_t = abs((pi.x - pj.x) * cos((angeli)*PI / 180)
-                    + (pi.y - pj.y) * sin((angeli)*PI / 180));
-                if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
-#if DRAW == SHOW_ALL
-                    drawContours(bin, contours, i, Scalar(150), CV_FILLED);
-                    drawContours(bin, contours, j, Scalar(150), CV_FILLED);
-#endif
-                    continue;
-                }
-                light1 = i;
-                light2 = j;
-                min_angel = abs(angeli - angelj);
+                continue;
             }
+            light1 = i;
+            light2 = j;
+            min_angel = abs(angel_i - angel_j);
         }
     }
 #if DRAW == SHOW_ALL
-    for(unsigned int i=0;i<vertices.size();++i){
-      LeastSquare leastsq(vertices.at(i));
+    //cout << "Draw lines" << lights.size() << endl;
+    for(unsigned int i=0;i<lights.size();++i){
+      LeastSquare leastsq(lights.at(i).contour);
+      // TODO: sometimes the line is drawed out the image
       line(bin,Point(leastsq.bh,0),Point(0,-leastsq.bh/leastsq.kh),Scalar(255,255,255),1,8);
+      //cout << "Point1: " << leastsq.bh << " 0" << endl; 
+      //cout << "Point2: 0 " << -leastsq.bh / leastsq.kh << endl;
     }
+    imshow("gray", bin);
 #endif
     if (light1 == -1 || light2 == -1 || min_angel == TWIN_ANGEL_MAX)
         return false;
     //cout << "min i:" << light1 << " j:" << light2 << " angel:" << min_angel << endl;
     // get and extend box for track init
-    Rect2d reci = lights.at(light1).boundingRect();
-    Rect2d recj = lights.at(light2).boundingRect();
+    Rect2d reci = lights.at(light1).rect.boundingRect();
+    Rect2d recj = lights.at(light2).rect.boundingRect();
     float min_x, min_y, max_x, max_y;
     if (reci.x < recj.x) {
         min_x = reci.x;

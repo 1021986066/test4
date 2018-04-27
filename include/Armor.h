@@ -8,6 +8,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <algorithm>
 
 #define NOT_FOUND 0
 #define FOUND_BORDER 1
@@ -42,6 +43,7 @@ private:
     double angel_j;
     double angle_ih;
     double angle_jh;
+
     long CONTOUR_AREA_MAX;
     long CONTOUR_AREA_MIN;
     int CONTOUR_LENGTH_MIN;
@@ -63,26 +65,6 @@ private:
     long total_contour_area;
 
 public:
-  /*--------------------------------------------------------
-  int CONTOUR_AREA_MAX;
-  int CONTOUR_AREA_MIN;
-  int CONTOUR_LENGTH_MIN;
-  float CONTOUR_HW_RATIO_MAX;
-  float CONTOUR_HW_RATIO_MIN;
-
-  float TWIN_ANGEL_MAX;
-  float TWIN_LENGTH_RATIO_MAX;
-  float TWIN_DISTANCE_N_MIN;
-  float TWIN_DISTANCE_N_MAX;
-  float TWIN_DISTANCE_T_MAX;
-
-  int EXPLORE_TRACK_THRES;
-  int EXPLORE_SEND_STOP_THRES;
-  int TRACK_CHECK_THRES;
-  float TRACK_CHECK_RATIO;
-  int TRACK_EXPLORE_THRES;
-  long total_contour_area;
-  --------------------------------------------------------*/
     Armor();
     void init();
     int run(Mat& frame);
@@ -107,8 +89,8 @@ public:
       x.push_back(point[i].x);
       y.push_back(point[i].y);
     }
-    float t1= 0, t2= 0, t3= 0, t4= 0, t5= 0;
-    for(int i= 0; i < (int)x.size(); ++i)
+    float t1= 0.0, t2= 0.0, t3= 0.0, t4= 0.0, t5= 0.0;
+    for(unsigned int i= 0; i < x.size(); ++i)
     {
       t1+= x[i] * x[i];
       t2+= x[i];
@@ -121,23 +103,26 @@ public:
     kh= (t3 * x.size() - t2 * t4) / (t5 * x.size() - t4 * t4);
     bh= (t5 * t2 - t4 * t3) / (t5 * x.size() - t4 * t4);
   }
-  float getangle(){
-    float angle;
-    if(abs(1/k)>=0.001) angle=-atan(k)*180/PI;
-    else angle=90;
-    return angle;
+  float getAngle(){
+    return atan(k)*180/PI;
   }
-  float getangleh(){
-    float angleh;
-    if(abs(1/kh)>=0.001) angleh=90+atan(kh)*180/PI;
-    else angleh=0;
-    return angleh;
+  float getAngleh(){
+    return 90-atan(kh)*180/PI;
   }
-  float getfinalangle(){
-    if(k>1/kh) return getangleh();
-    else return getangle();
+  float getFinalAngle(){
+    if(k<1)
+        return getAngleh();
+    else
+        return getAngle();
   }
   void getline(){
     cout<<"y="<<k<<"x+"<<b<<endl;
   }
+};
+
+struct Light {
+    RotatedRect rect;
+    vector<Point> contour;
+    Light(RotatedRect & r, vector<Point>& c):
+        rect(r), contour(c){};
 };
