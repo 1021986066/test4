@@ -41,8 +41,9 @@ void Armor::init()
     CONTOUR_AREA_MIN     = 5;//20
     CONTOUR_AREA_MAX     = 2000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
-    CONTOUR_HW_RATIO_MIN = 1.0;//2.5
+    CONTOUR_HW_RATIO_MIN = 2.5;//2.5
     CONTOUR_HW_RATIO_MAX = 15;
+    CONTOUR_ANGLE_MAX    = 15.0;
 
     // pair lights
     TWIN_ANGEL_MAX        = 5.001;
@@ -205,7 +206,7 @@ bool Armor::explore(Mat& frame)
     vector<long> areas;
     vector<Light> lights;
     findContours(bin, contours,
-        CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
+        CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE);
     //select contours by area, length, width/height
     for (unsigned int i = 0; i < contours.size(); ++i) {
         long area = contourArea(contours.at(i));
@@ -239,14 +240,22 @@ bool Armor::explore(Mat& frame)
 #  endif
             continue;
         }
+
+        float angle = rec.angle;
+        angle = - angle;
+        if (size.width < size.height)		
+            angle += 90.0;		
+        if (angle > 90.0 + CONTOUR_ANGLE_MAX  
+                || angle < 90.0 - CONTOUR_ANGLE_MAX)
+            continue;
         //cout << "push back" << endl;
-        lights.push_back(Light(rec, contours[i]));
+        lights.push_back(Light(rec, contours[i], angle));
         areas.push_back(area);
     }
     if (lights.size() < 2)
         return false;
     int light1 = -1, light2 = -1;
-    float min_angel = TWIN_ANGEL_MAX;
+    float min_angle = TWIN_ANGEL_MAX;
     sort(lights.begin(), lights.end(), less_x);
     // cout << "lights: " << lights.size() << endl;
     // pair lights by length, distance, angel
@@ -268,18 +277,16 @@ bool Armor::explore(Mat& frame)
                 || aj / ai > TWIN_LENGTH_RATIO_MAX)
             continue;
 
-        //Using function LeastSquare to fitting
-        LeastSquare leastsqi(lights.at(i).contour);
-        angel_i = leastsqi.getFinalAngle();
-        //leastsqi.getline();
-        LeastSquare leastsqj(lights.at(j).contour);
-        angel_j = leastsqj.getFinalAngle();
-        //leastsqj.getline();
-        cout << "angel_i" << angel_i << endl;
-        cout << "angel_j" << angel_j << endl;
-        if (abs(angel_i - angel_j) < min_angel) {
-            float distance_n = abs((pi.x - pj.x) * cos((angel_i + 90) * PI / 180)
-                + (pi.y - pj.y) * sin((angel_i + 90) * PI / 180));
+        float anglei = lights[i].angle;
+        float anglej = lights[j].angle;
+        //cout << "light(i) angle:" << anglei
+            //<<" light(j) angle" << anglej <<endl;		
+        //cout << "light i x: " << lights[i].rect.center.x
+            //<< " light j x: " << lights[j].rect.center.x << endl;
+
+        if (abs(anglei - anglej) < min_angle) {
+            float distance_n = abs((pi.x - pj.x) * cos((anglei + 90) * PI / 180)
+                + (pi.y - pj.y) * sin((anglei + 90) * PI / 180));
             // normal distance range in about 1 ~ 2 times of length
             // cout << "Distance n: " << distance_n / ai << endl;
             // add the large armor on hero, which should be 3 ~ 4 times of length. Maybe negative influence on small armor detection.
@@ -292,8 +299,8 @@ bool Armor::explore(Mat& frame)
                 continue;
             }
             // direction distance should be small
-            float distance_t = abs((pi.x - pj.x) * cos((angel_i)*PI / 180)
-                + (pi.y - pj.y) * sin((angel_i)*PI / 180));
+            float distance_t = abs((pi.x - pj.x) * cos((anglei)*PI / 180)
+                + (pi.y - pj.y) * sin((anglei)*PI / 180));
             //cout << "Distance t: " << distance_t / ai << endl;
             if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
 #if DRAW == SHOW_ALL
@@ -304,24 +311,15 @@ bool Armor::explore(Mat& frame)
             }
             light1    = i;
             light2    = j;
-            min_angel = abs(angel_i - angel_j);
+            min_angle = abs(anglei - anglej);
         }
     }
 #if DRAW == SHOW_ALL
-    //cout << "Draw lines" << lights.size() << endl;
-    for(unsigned int i = 0;i < lights.size(); ++i){
-      LeastSquare leastsq(lights.at(i).contour);
-      // TODO: sometimes the line is drawed out the image
-      line(bin,Point(leastsq.bh,0),Point(0,-leastsq.bh/leastsq.kh),
-              Scalar(255,255,255),1,8);
-      //cout << "Point1: " << leastsq.bh << " 0" << endl; 
-      //cout << "Point2: 0 " << -leastsq.bh / leastsq.kh << endl;
-    }
     imshow("gray", bin);
 #endif
-    if (light1 == -1 || light2 == -1 || min_angel == TWIN_ANGEL_MAX)
+    if (light1 == -1 || light2 == -1 || min_angle == TWIN_ANGEL_MAX)
         return false;
-    //cout << "min i:" << light1 << " j:" << light2 << " angel:" << min_angel << endl;
+    //cout << "min i:" << light1 << " j:" << light2 << " angel:" << min_angle << endl;
     // get and extend box for track init
     Rect2d reci = lights.at(light1).rect.boundingRect();
     Rect2d recj = lights.at(light2).rect.boundingRect();

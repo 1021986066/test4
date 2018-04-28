@@ -49,12 +49,17 @@ video_file >> video_id_str;
 video_file.close();
 
 video_file.open("../hello.txt", ios::out );
-int video_id = stoi(video_id_str) + 1;
+int video_id = atoi(video_id_str.c_str()) + 1;
 video_file << video_id ;
 video_file.close();
 
+#if PLATFORM == PC
 string file_name = string(getpwuid(getuid())->pw_dir) 
     + "/Videos/Record" + video_id_str + ".avi";
+# else
+string file_name = "/home/ubuntu/Videos/Record" + video_id_str + ".avi";
+#endif
+
 cout << "File name: " << file_name << endl;
 VideoWriter g_writer;
 g_writer.open(file_name, CV_FOURCC('P', 'I', 'M', '1'), 120,
@@ -70,7 +75,7 @@ g_writer.open(file_name, CV_FOURCC('P', 'I', 'M', '1'), 120,
     }
 #endif
 #if VIDEO == VIDEO_FILE
-    video.open("/home/jachinshen/Videos/Robo/station-infanity/fartoclose_light.avi");
+    video.open("/home/jachinshen/Videos/Robo/station-infanity/Random.avi");
     if (video.isOpened())
         cout << "Open Video Successfully!" << endl;
     else {
@@ -88,7 +93,9 @@ g_writer.open(file_name, CV_FOURCC('P', 'I', 'M', '1'), 120,
     Mat frame1, frame2;
     bool ok = true;
 
-    video.read(frame2);
+    for (int i=0; i<10; ++i)
+        video.read(frame2);
+
     while (ok) {
 #       pragma omp parallel sections 
         {
@@ -137,6 +144,8 @@ g_writer.open(file_name, CV_FOURCC('P', 'I', 'M', '1'), 120,
     }
 #   else
     Mat frame;
+    for (int i=0; i<10; ++i)
+        video.read(frame);
     while (video.read(frame)) {
         armor.run(frame);
         cv::waitKey(1);
