@@ -72,7 +72,8 @@ int main(void)
             cout << "Global Shutter Camera Init successfully!" << endl;
         } else {
             cout << "Global Shutter Camera Init Failed!" << endl;
-            return -1;
+            //return -1;
+            continue;
         }
 #endif
 #if VIDEO == VIDEO_FILE
@@ -81,7 +82,8 @@ int main(void)
             cout << "Open Video Successfully!" << endl;
         else {
             cout << "Open Video failed!" << endl;
-            return -1;
+            //return -1;
+            continue;
         }
 #endif
 
