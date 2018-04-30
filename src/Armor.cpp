@@ -140,7 +140,7 @@ int Armor::run(Mat& frame)
 
         // check if the box is still tracking armor
         if (found_ctr >= TRACK_CHECK_THRES) {
-            Mat roi = frame(bbox);
+            Mat roi = frame.clone()(bbox);
             threshold(roi, roi, GRAY_THRESH, 255, THRESH_BINARY);
             if (countNonZero(roi) < TRACK_CHECK_RATIO * total_contour_area) {
                 transferState(EXPLORE);

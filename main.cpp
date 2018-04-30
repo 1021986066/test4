@@ -148,11 +148,11 @@ int main(void)
         for (int i=0; i<10; ++i)
             video.read(frame);
         while (video.read(frame)) {
-            armor.run(frame);
-            cv::waitKey(0);
 #       if RECORD == RECORD_ON
             g_writer.write(frame);
 #       endif
+            armor.run(frame);
+            cv::waitKey(0);
         }
         cout << "End!" << endl;
 #endif
