@@ -35,7 +35,7 @@ void Armor::init()
     BORDER_IGNORE = 10;
     BOX_EXTRA     = 10;
 
-    GRAY_THRESH   = 235;
+    GRAY_THRESH   = 240;
 
     // select contours
     CONTOUR_AREA_MIN     = 5;//20
