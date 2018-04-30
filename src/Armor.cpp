@@ -41,7 +41,7 @@ void Armor::init()
     CONTOUR_AREA_MIN     = 5;//20
     CONTOUR_AREA_MAX     = 2000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
-    CONTOUR_HW_RATIO_MIN = 2.5;//2.5
+    CONTOUR_HW_RATIO_MIN = 1.0;//2.5
     CONTOUR_HW_RATIO_MAX = 15;
     CONTOUR_ANGLE_MAX    = 15.0;
 
@@ -53,7 +53,7 @@ void Armor::init()
     TWIN_DISTANCE_T_MAX   = 1.4;
 
     // state machine
-    EXPLORE_TRACK_THRES     = 2;
+    EXPLORE_TRACK_THRES     = 1;
     EXPLORE_SEND_STOP_THRES = 5;
     TRACK_CHECK_THRES       = 3;
     TRACK_CHECK_RATIO       = 0.4;
@@ -206,7 +206,7 @@ bool Armor::explore(Mat& frame)
     vector<long> areas;
     vector<Light> lights;
     findContours(bin, contours,
-        CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE);
+        CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
     //select contours by area, length, width/height
     for (unsigned int i = 0; i < contours.size(); ++i) {
         long area = contourArea(contours.at(i));
@@ -241,10 +241,14 @@ bool Armor::explore(Mat& frame)
             continue;
         }
 
-        float angle = rec.angle;
-        angle = - angle;
-        if (size.width < size.height)		
-            angle += 90.0;		
+        //float angle = rec.angle;
+        //angle = - angle;
+        //if (size.width < size.height)		
+            //angle += 90.0;		
+        //cout << "RotatedRect: " << angle << endl;
+        LeastSquare leasq(contours[i]);
+        //cout << "LeastSquare: " << leasq.getAngle() << " | " << leasq.getAngleh() << endl;
+        float angle = leasq.getAngleh();
         if (angle > 90.0 + CONTOUR_ANGLE_MAX  
                 || angle < 90.0 - CONTOUR_ANGLE_MAX)
             continue;
