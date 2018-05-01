@@ -109,7 +109,7 @@ void Serial::sendTarget(int target_x, int target_y, int is_found)
     buf[1] = (target_x >> 8) & 0xFF;
     buf[2] = target_x & 0xFF;
     if (is_found == 2) {
-        buf[3] = 0xA6;
+        buf[3] = 0xA8;
     } else if (is_found == 1) {
         buf[3] = 0xA6;
     } else {

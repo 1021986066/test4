@@ -58,6 +58,8 @@ void Armor::init()
     TRACK_CHECK_THRES       = 3;
     TRACK_CHECK_RATIO       = 0.4;
     TRACK_EXPLORE_THRES     = 2;
+
+    ARMOR_CLASS = NOT_FOUND;
 }
 
 int Armor::run(Mat& frame)
@@ -94,14 +96,14 @@ int Armor::run(Mat& frame)
 
         if (found_ctr >= EXPLORE_TRACK_THRES) {
             serial.sendTarget((bbox.x + bbox.width / 2),
-                    (bbox.y + bbox.height / 2), FOUND_BORDER);
+                    (bbox.y + bbox.height / 2), ARMOR_CLASS);
             transferState(TRACK_INIT);
             found_ctr   = 0;
             unfound_ctr = 0;
             bbox_last   = bbox;
         }
         if (unfound_ctr >= EXPLORE_SEND_STOP_THRES) {
-            serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND);
+            serial.sendTarget(srcW / 2, srcH / 2, ARMOR_CLASS);
             found_ctr   = 0;
             unfound_ctr = 0;
         }
@@ -301,6 +303,13 @@ bool Armor::explore(Mat& frame)
                 drawContours(bin, contours, j, Scalar(150), CV_FILLED);
 #endif
                 continue;
+            }
+            if (distance_n > 1.0 * TWIN_DISTANCE_N_MAX * ai
+                    && distance_n > 1.0 * TWIN_DISTANCE_N_MAX * aj) {
+                ARMOR_CLASS = LARGE_ARMOR;
+                cout << "Hero!" << endl;
+            } else {
+                ARMOR_CLASS = SMALL_ARMOR;
             }
             // direction distance should be small
             float distance_t = abs((pi.x - pj.x) * cos((anglei)*PI / 180)

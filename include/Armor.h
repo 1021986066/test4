@@ -13,6 +13,8 @@
 #define NOT_FOUND 0
 #define FOUND_BORDER 1
 #define FOUND_CENTER 2
+#define SMALL_ARMOR 1
+#define LARGE_ARMOR 2
 
 using namespace cv;
 using namespace std;
@@ -59,6 +61,8 @@ private:
     int TRACK_EXPLORE_THRES;
 
     long total_contour_area;
+
+    int ARMOR_CLASS;
 
 public:
     Armor();
