@@ -38,12 +38,12 @@ void Armor::init()
     GRAY_THRESH   = 235;
 
     // select contours
-    CONTOUR_AREA_MIN     = 5;//20
+    CONTOUR_AREA_MIN     = 40;//20
     CONTOUR_AREA_MAX     = 2000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
     CONTOUR_HW_RATIO_MIN = 1.0;//2.5
     CONTOUR_HW_RATIO_MAX = 15;
-    CONTOUR_ANGLE_MAX    = 15.0;
+    CONTOUR_ANGLE_MAX    = 20.0;
 
     // pair lights
     TWIN_ANGEL_MAX        = 5.001;
