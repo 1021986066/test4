@@ -128,9 +128,9 @@ void Serial::sendTarget(int target_x, int target_y, int is_found)
     //n = write(fd, buf, 7);
     write(fd, buf, 7);
     //读串口30字节到buf
-    char receive[50] = { 0 };
+    char receive[30] = { 0 };
     //int n = read(fd, receive, 50);
     read(fd, receive, 50);
-    cout << "Receive:" << receive << endl;
+    //cout << "Receive:" << receive << endl;
 #endif
 };

@@ -19,13 +19,27 @@
 using namespace cv;
 using namespace std;
 
+struct Light {
+    RotatedRect rect;
+    vector<Point> contour;
+    float angle;
+    Light(RotatedRect & r, vector<Point>& c, float & ag):
+        rect(r), contour(c), angle(ag){};
+    //bool operator < (Light & l2) {
+        //return this->rect.center.x < l2.rect.center.x;
+    //}
+};
 class Armor {
 private:
     enum State {
-        EXPLORE,
-        TRACK_INIT,
-        TRACK
+        FAST_EXPLORE,
+        FAST_TRACK_INIT,
+        FAST_TRACK,
+        SLOW_EXPLORE,
+        SLOW_TRACK_INIT,
+        SLOW_TRACK
     } state;
+
     Rect2d bbox;
     Rect2d bbox_last;
     KCFTracker tracker;
@@ -46,6 +60,7 @@ private:
     int CONTOUR_LENGTH_MIN;
     float CONTOUR_HW_RATIO_MAX;
     float CONTOUR_HW_RATIO_MIN;
+    float SLOW_CONTOUR_HW_RATIO_MIN;
     float CONTOUR_ANGLE_MAX;
 
     float TWIN_ANGEL_MAX;
@@ -53,17 +68,26 @@ private:
     float TWIN_DISTANCE_N_MIN;
     float TWIN_DISTANCE_N_MAX;
     float TWIN_DISTANCE_T_MAX;
+    float TWIN_AREA_MAX;
 
-    int EXPLORE_TRACK_THRES;
-    int EXPLORE_SEND_STOP_THRES;
-    int TRACK_CHECK_THRES;
-    float TRACK_CHECK_RATIO;
-    int TRACK_EXPLORE_THRES;
+    int FAST_EXPLORE_TRACK_THRES;
+    int FAST_EXPLORE_SEND_STOP_THRES;
+    int FAST_TRACK_SLOW_THRES;
+    //float FAST_TRACK_CHECK_RATIO;
+    int FAST_TRACK_EXPLORE_THRES;
+
+    int SLOW_EXPLORE_TRACK_THRES;
+    int SLOW_EXPLORE_SEND_STOP_THRES;
+    int SLOW_TRACK_CHECK_THRES;
+    float SLOW_TRACK_CHECK_RATIO;
+    int SLOW_TRACK_EXPLORE_THRES;
 
     long total_contour_area;
 
     int ARMOR_CLASS;
 
+    vector<long> areas;
+    vector<Light> lights;
 public:
     Armor();
     void init();
@@ -71,17 +95,16 @@ public:
 private:
     void transferState(State s);
     bool explore(Mat& frame);
+    bool fastExplore(Mat& frame);
+    bool fastSelectContours(Mat& frame);
+    bool fastPairContours();
+    bool slowExplore(Mat& frame);
+    bool slowSelectContours(Mat& frame);
+    bool slowPairContours();
     void trackInit(Mat& frame);
     bool track(Mat& frame);
 };
 
-struct Light {
-    RotatedRect rect;
-    vector<Point> contour;
-    float angle;
-    Light(RotatedRect & r, vector<Point>& c, float & ag):
-        rect(r), contour(c), angle(ag){};
-};
 class LeastSquare		
 {		
 public:		
