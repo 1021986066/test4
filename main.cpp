@@ -77,7 +77,7 @@ int main(void)
         }
 #endif
 #if VIDEO == VIDEO_FILE
-        video.open("/home/jachinshen/Videos/Robo/station-infanity/rotate.avi");
+        video.open("/home/jachinshen/Videos/Videos/Record12.avi");
         if (video.isOpened())
             cout << "Open Video Successfully!" << endl;
         else {
@@ -154,7 +154,7 @@ int main(void)
             g_writer.write(frame);
 #       endif
             armor.run(frame);
-            cv::waitKey(1);
+            cv::waitKey(0);
         }
         cout << "End!" << endl;
 #endif

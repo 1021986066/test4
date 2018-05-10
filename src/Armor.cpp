@@ -39,18 +39,22 @@ void Armor::init()
 
     // select contours
     CONTOUR_AREA_MIN     = 40;//20
-    CONTOUR_AREA_MAX     = 2000;//2000
+    CONTOUR_AREA_MAX     = 500;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
     CONTOUR_HW_RATIO_MIN = 1.0;//2.5
-    SLOW_CONTOUR_HW_RATIO_MIN = 2.5;//2.5
+    SLOW_CONTOUR_HW_RATIO_MIN = 3.0;//2.5
     CONTOUR_HW_RATIO_MAX = 15;
+    SLOW_CONTOUR_HW_RATIO_MAX = 7;
     CONTOUR_ANGLE_MAX    = 20.0;
 
     // pair lights
     TWIN_ANGEL_MAX        = 5.001;
     TWIN_LENGTH_RATIO_MAX = 1.5;
+    SLOW_TWIN_LENGTH_RATIO_MAX = 1.2;
     TWIN_DISTANCE_N_MIN   = 1.6;//1.7
+    SLOW_TWIN_DISTANCE_N_MIN   = 2.0;//1.7
     TWIN_DISTANCE_N_MAX   = 3.8;//3.8
+    SLOW_TWIN_DISTANCE_N_MAX   = 2.6;//1.7
     TWIN_DISTANCE_T_MAX   = 1.4;
     TWIN_AREA_MAX         = 1.2;
 
@@ -125,9 +129,9 @@ int Armor::run(Mat& frame)
                     && bbox_last.y < center_y
                     && center_y < bbox_last.y + bbox_last.height) {
                 // if center is in box, predict it run at const velocity
-                serial.sendTarget(2 * x - x_last, y, FOUND_CENTER);
+                serial.sendTarget(2 * x - x_last, y, ARMOR_CLASS);
             } else {
-                serial.sendTarget(x, y, FOUND_BORDER);
+                serial.sendTarget(x, y, ARMOR_CLASS);
             }
             ++found_ctr;
             unfound_ctr = 0;
@@ -175,7 +179,7 @@ int Armor::run(Mat& frame)
             bbox_last   = bbox;
         }
         if (unfound_ctr >= SLOW_EXPLORE_SEND_STOP_THRES) {
-            transferState(FAST_EXPLORE);
+            transferState(LEAVE_MISDETECT);
             serial.sendTarget(srcW / 2, srcH / 2, ARMOR_CLASS);
             found_ctr   = 0;
             unfound_ctr = 0;
@@ -201,9 +205,9 @@ int Armor::run(Mat& frame)
                     && bbox_last.y < center_y
                     && center_y < bbox_last.y + bbox_last.height) {
                 // if center is in box, predict it run at const velocity
-                serial.sendTarget(2 * x - x_last, y, FOUND_CENTER);
+                serial.sendTarget(2 * x - x_last, y, ARMOR_CLASS);
             } else {
-                serial.sendTarget(x, y, FOUND_BORDER);
+                serial.sendTarget(x, y, ARMOR_CLASS);
             }
             ++found_ctr;
             unfound_ctr = 0;
@@ -237,6 +241,12 @@ int Armor::run(Mat& frame)
         // Display frame.
         imshow("Tracking", frame);
 #endif
+    } else if (state == LEAVE_MISDETECT) {
+        ++unfound_ctr;
+        serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND);
+        if (unfound_ctr > 5) {
+            unfound_ctr = 0;
+        }
     }
     float fps = 1 / (tic() - timer);
     cout << "fps: " << fps << endl;
@@ -621,10 +631,10 @@ bool Armor::fastPairContours()
 
         float anglei = lights[i].angle;
         float anglej = lights[j].angle;
-        cout << "light(i) angle:" << anglei
-            <<" light(j) angle" << anglej <<endl;		
+        //cout << "light(i) angle:" << anglei
+            //<<" light(j) angle" << anglej <<endl;		
         float similarity = matchShapes(lights[i].contour, lights[j].contour, CV_CONTOURS_MATCH_I2, 0);
-        cout << "Similar: " << similarity << endl;
+        //cout << "Similar: " << similarity << endl;
         if (similarity > min_similarity) {
             continue;
         }
@@ -643,14 +653,6 @@ bool Armor::fastPairContours()
             || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > 2 * TWIN_DISTANCE_N_MAX * aj) {
             continue;
         }
-        if (distance_n > 1.0 * TWIN_DISTANCE_N_MAX * ai
-                && distance_n > 1.0 * TWIN_DISTANCE_N_MAX * aj) {
-            ARMOR_CLASS = LARGE_ARMOR;
-            cout << "Hero!" << endl;
-            cout << "Distance n: " << distance_n / ai << endl;
-        } else {
-            ARMOR_CLASS = SMALL_ARMOR;
-        }
         // direction distance should be small
         float distance_t = abs((pi.x - pj.x) * cos((anglei)*PI / 180)
             + (pi.y - pj.y) * sin((anglei)*PI / 180));
@@ -660,6 +662,7 @@ bool Armor::fastPairContours()
         }
         light1 = i;
         light2 = j;
+        ARMOR_CLASS = SMALL_ARMOR;
     }
 
     if (light1 == -1 || light2 == -1 )
@@ -742,14 +745,14 @@ bool Armor::slowSelectContours(Mat& frame)
             continue;
         }
         //check if it is thin
-        //cout << "a / b: " << a / b << endl;
-        if (a / b > CONTOUR_HW_RATIO_MAX
+        if (a / b > SLOW_CONTOUR_HW_RATIO_MAX
                 || a / b < SLOW_CONTOUR_HW_RATIO_MIN) {
 #  if DRAW == SHOW_ALL
             drawContours(bin, contours, i, Scalar(100), CV_FILLED);
 #  endif
             continue;
         }
+        cout << "a / b: " << a / b << endl;
 
         cout << "Area Ratio: " << area / size.area() << endl;
         if (area/size.area() < 0.7)
@@ -778,6 +781,7 @@ bool Armor::slowPairContours()
 
     int light1 = -1, light2 = -1;
     float min_angle = TWIN_ANGEL_MAX;
+    float min_distance_n = 2 * SLOW_TWIN_DISTANCE_N_MAX;
     sort(lights.begin(), lights.begin() + lights.size()-1, less_x);
     // cout << "lights: " << lights.size() << endl;
     // pair lights by length, distance, angel
@@ -794,10 +798,10 @@ bool Armor::slowPairContours()
             ? sizej.height
             : sizej.width;
         // length similar
-        //cout << "Twin length: " << ai/aj << endl;
-        if (ai / aj > TWIN_LENGTH_RATIO_MAX
-                || aj / ai > TWIN_LENGTH_RATIO_MAX)
+        if (ai / aj > SLOW_TWIN_LENGTH_RATIO_MAX
+                || aj / ai > SLOW_TWIN_LENGTH_RATIO_MAX)
             continue;
+        //cout << "Twin length: " << ai/aj << endl;
 
         float anglei = lights[i].angle;
         float anglej = lights[j].angle;
@@ -816,31 +820,43 @@ bool Armor::slowPairContours()
         float distance_n = abs((pi.x - pj.x) * cos((anglei + 90) * PI / 180)
             + (pi.y - pj.y) * sin((anglei + 90) * PI / 180));
         // normal distance range in about 1 ~ 2 times of length
-        // cout << "Distance n: " << distance_n / ai << endl;
         // add the large armor on hero, which should be 3 ~ 4 times of length. Maybe negative influence on small armor detection.
-        if (distance_n < TWIN_DISTANCE_N_MIN * ai || distance_n > 2 * TWIN_DISTANCE_N_MAX * ai
-            || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > 2 * TWIN_DISTANCE_N_MAX * aj) {
+        ai = (ai + aj) / 2;
+        cout << "Distance n: " << distance_n / ai << endl;
+        if (distance_n > min_distance_n * ai) {
             continue;
         }
-        if (distance_n > 1.0 * TWIN_DISTANCE_N_MAX * ai
-                && distance_n > 1.0 * TWIN_DISTANCE_N_MAX * aj) {
+        if (distance_n < SLOW_TWIN_DISTANCE_N_MIN * ai) {
+            continue;
+        }
+        if (distance_n > SLOW_TWIN_DISTANCE_N_MAX * ai
+                && distance_n < 2 * SLOW_TWIN_DISTANCE_N_MIN * ai ) {
+            continue;
+        }
+        if (distance_n > 2 * SLOW_TWIN_DISTANCE_N_MAX * ai) {
+            continue;
+        }
+
+        // direction distance should be small
+        float distance_t = abs((pi.x - pj.x) * cos((anglei)*PI / 180)
+            + (pi.y - pj.y) * sin((anglei)*PI / 180));
+        cout << "Distance t: " << distance_t / ai << endl;
+        if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
+            continue;
+        }
+
+        light1 = i;
+        light2 = j;
+        min_angle = abs(anglei - anglej);
+        min_distance_n = distance_n / ai;
+        if (distance_n > 1.0 * TWIN_DISTANCE_N_MAX * ai) {
             ARMOR_CLASS = LARGE_ARMOR;
             cout << "Hero!" << endl;
             cout << "Distance n: " << distance_n / ai << endl;
         } else {
             ARMOR_CLASS = SMALL_ARMOR;
+            cout << "Infanity" << endl;
         }
-        // direction distance should be small
-        float distance_t = abs((pi.x - pj.x) * cos((anglei)*PI / 180)
-            + (pi.y - pj.y) * sin((anglei)*PI / 180));
-        //cout << "Distance t: " << distance_t / ai << endl;
-        if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
-            continue;
-        }
-        light1 = i;
-        light2 = j;
-        min_angle = abs(anglei - anglej) * 2;
-        min_angle = min_angle < TWIN_ANGEL_MAX ? min_angle : TWIN_ANGEL_MAX;
     }
 
     if (light1 == -1 || light2 == -1 )

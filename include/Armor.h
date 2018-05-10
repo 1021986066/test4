@@ -11,8 +11,8 @@
 #include <algorithm>
 
 #define NOT_FOUND 0
-#define FOUND_BORDER 1
-#define FOUND_CENTER 2
+//#define FOUND_BORDER 1
+//#define FOUND_CENTER 2
 #define SMALL_ARMOR 1
 #define LARGE_ARMOR 2
 
@@ -37,7 +37,8 @@ private:
         FAST_TRACK,
         SLOW_EXPLORE,
         SLOW_TRACK_INIT,
-        SLOW_TRACK
+        SLOW_TRACK,
+        LEAVE_MISDETECT
     } state;
 
     Rect2d bbox;
@@ -59,14 +60,18 @@ private:
     long CONTOUR_AREA_MIN;
     int CONTOUR_LENGTH_MIN;
     float CONTOUR_HW_RATIO_MAX;
+    float SLOW_CONTOUR_HW_RATIO_MAX;
     float CONTOUR_HW_RATIO_MIN;
     float SLOW_CONTOUR_HW_RATIO_MIN;
     float CONTOUR_ANGLE_MAX;
 
     float TWIN_ANGEL_MAX;
     float TWIN_LENGTH_RATIO_MAX;
+    float SLOW_TWIN_LENGTH_RATIO_MAX;
     float TWIN_DISTANCE_N_MIN;
+    float SLOW_TWIN_DISTANCE_N_MIN;
     float TWIN_DISTANCE_N_MAX;
+    float SLOW_TWIN_DISTANCE_N_MAX;
     float TWIN_DISTANCE_T_MAX;
     float TWIN_AREA_MAX;
 

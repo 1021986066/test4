@@ -22,7 +22,7 @@
 #endif
 
 #if PLATFORM == PC
-#   define VIDEO         VIDEO_CAMERA
+#   define VIDEO         VIDEO_FILE
 #   define DRAW          SHOW_ALL
 #   define OPENMP_SWITCH OPENMP_STOP
 #elif PLATFORM == MANIFOLD
