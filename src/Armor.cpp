@@ -39,7 +39,7 @@ void Armor::init()
 
     // select contours
     CONTOUR_AREA_MIN     = 40;//20
-    CONTOUR_AREA_MAX     = 500;//2000
+    CONTOUR_AREA_MAX     = 1000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
     CONTOUR_HW_RATIO_MIN = 1.0;//2.5
     SLOW_CONTOUR_HW_RATIO_MIN = 3.0;//2.5
@@ -49,9 +49,9 @@ void Armor::init()
 
     // pair lights
     TWIN_ANGEL_MAX        = 5.001;
-    TWIN_LENGTH_RATIO_MAX = 1.5;
+    TWIN_LENGTH_RATIO_MAX = 2.0;
     SLOW_TWIN_LENGTH_RATIO_MAX = 1.2;
-    TWIN_DISTANCE_N_MIN   = 1.6;//1.7
+    TWIN_DISTANCE_N_MIN   = 1.3;//1.7
     SLOW_TWIN_DISTANCE_N_MIN   = 2.0;//1.7
     TWIN_DISTANCE_N_MAX   = 3.8;//3.8
     SLOW_TWIN_DISTANCE_N_MAX   = 2.6;//1.7
@@ -69,7 +69,7 @@ void Armor::init()
     SLOW_EXPLORE_SEND_STOP_THRES = 5;
     SLOW_TRACK_CHECK_THRES       = 3;
     SLOW_TRACK_CHECK_RATIO       = 0.4;
-    SLOW_TRACK_EXPLORE_THRES     = 2;
+    SLOW_TRACK_EXPLORE_THRES     = 3;
 
     ARMOR_CLASS = NOT_FOUND;
 }
@@ -143,9 +143,19 @@ int Armor::run(Mat& frame)
 
         // check if the box is still tracking armor
         if (found_ctr >= FAST_TRACK_SLOW_THRES) {
-            transferState(SLOW_EXPLORE);
-            found_ctr   = 0;
-            unfound_ctr = 0;
+            if (srcW/2 - 30 < bbox.x + bbox.width/2 && bbox.x + bbox.width/2 < srcW/2 + 30) {
+                transferState(SLOW_EXPLORE);
+                found_ctr   = 0;
+                unfound_ctr = 0;
+            }
+            Mat roi = frame.clone()(bbox);
+            threshold(roi, roi, GRAY_THRESH, 255, THRESH_BINARY);
+            if (countNonZero(roi) < SLOW_TRACK_CHECK_RATIO * total_contour_area) {
+                ARMOR_CLASS = NOT_FOUND;
+                transferState(FAST_EXPLORE);
+                found_ctr   = 0;
+                unfound_ctr = 0;
+            }
         }
         // sometimes, tracker only miss 1 frame
         if (unfound_ctr >= FAST_TRACK_EXPLORE_THRES) {
@@ -171,6 +181,7 @@ int Armor::run(Mat& frame)
         }
 
         if (found_ctr >= SLOW_EXPLORE_TRACK_THRES) {
+            cout << "Find: " << ARMOR_CLASS << endl;
             serial.sendTarget((bbox.x + bbox.width / 2),
                     (bbox.y + bbox.height / 2), ARMOR_CLASS);
             transferState(SLOW_TRACK_INIT);
@@ -179,8 +190,8 @@ int Armor::run(Mat& frame)
             bbox_last   = bbox;
         }
         if (unfound_ctr >= SLOW_EXPLORE_SEND_STOP_THRES) {
-            transferState(LEAVE_MISDETECT);
-            serial.sendTarget(srcW / 2, srcH / 2, ARMOR_CLASS);
+            transferState(FAST_EXPLORE);
+            serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND_LEAVE);
             found_ctr   = 0;
             unfound_ctr = 0;
         }
@@ -241,12 +252,6 @@ int Armor::run(Mat& frame)
         // Display frame.
         imshow("Tracking", frame);
 #endif
-    } else if (state == LEAVE_MISDETECT) {
-        ++unfound_ctr;
-        serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND);
-        if (unfound_ctr > 5) {
-            unfound_ctr = 0;
-        }
     }
     float fps = 1 / (tic() - timer);
     cout << "fps: " << fps << endl;
@@ -590,8 +595,8 @@ bool Armor::fastSelectContours(Mat& frame)
         LeastSquare leasq(contours[i]);
         //cout << "LeastSquare: " << leasq.getAngle() << " | " << leasq.getAngleh() << endl;
         float angle = leasq.getAngleh();
-        if (angle > 90.0 + CONTOUR_ANGLE_MAX  
-                || angle < 90.0 - CONTOUR_ANGLE_MAX)
+        if (angle > 120.0
+                || angle < 60.0)
             continue;
         //cout << "push back" << endl;
         lights.push_back(Light(rec, contours[i], angle));
@@ -638,9 +643,9 @@ bool Armor::fastPairContours()
         if (similarity > min_similarity) {
             continue;
         }
-        min_similarity = similarity * 2;
-        min_similarity = min_similarity < 3.0 ? min_similarity : 3.0;
-        if (abs(anglei - anglej) > TWIN_ANGEL_MAX) {
+        min_similarity = similarity ;
+        //min_similarity = min_similarity < 3.0 ? min_similarity : 3.0;
+        if (abs(anglei - anglej) > 10.0) {
             continue;
         }
 
@@ -654,12 +659,12 @@ bool Armor::fastPairContours()
             continue;
         }
         // direction distance should be small
-        float distance_t = abs((pi.x - pj.x) * cos((anglei)*PI / 180)
-            + (pi.y - pj.y) * sin((anglei)*PI / 180));
+        //float distance_t = abs((pi.x - pj.x) * cos((anglei)*PI / 180)
+            //+ (pi.y - pj.y) * sin((anglei)*PI / 180));
         //cout << "Distance t: " << distance_t / ai << endl;
-        if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
-            continue;
-        }
+        //if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
+            //continue;
+        //}
         light1 = i;
         light2 = j;
         ARMOR_CLASS = SMALL_ARMOR;

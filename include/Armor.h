@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <algorithm>
 
+#define NOT_FOUND_LEAVE -1
 #define NOT_FOUND 0
 //#define FOUND_BORDER 1
 //#define FOUND_CENTER 2
@@ -37,8 +38,7 @@ private:
         FAST_TRACK,
         SLOW_EXPLORE,
         SLOW_TRACK_INIT,
-        SLOW_TRACK,
-        LEAVE_MISDETECT
+        SLOW_TRACK
     } state;
 
     Rect2d bbox;

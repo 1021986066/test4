@@ -112,7 +112,12 @@ void Serial::sendTarget(int target_x, int target_y, int is_found)
         buf[3] = 0xA8;
     } else if (is_found == 1) {
         buf[3] = 0xA6;
+    } else if (is_found == 0) {
+        buf[3] = 0xA4;
+    } else if (is_found == -1) {
+        buf[3] = 0xA3;
     } else {
+        cout << "Invalid Instruction!" << endl;
         buf[3] = 0xA4;
     }
     buf[4] = (target_y >> 8) & 0xFF;
