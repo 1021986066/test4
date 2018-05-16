@@ -77,7 +77,7 @@ int main(void)
         }
 #endif
 #if VIDEO == VIDEO_FILE
-        video.open("/home/jachinshen/Videos/Videos/Record12.avi");
+        video.open("/home/jachinshen/Videos/Record32.avi");
         if (video.isOpened())
             cout << "Open Video Successfully!" << endl;
         else {

@@ -38,7 +38,7 @@ void Armor::init()
     GRAY_THRESH   = 235;
 
     // select contours
-    CONTOUR_AREA_MIN     = 40;//20
+    CONTOUR_AREA_MIN     = 30;//20
     CONTOUR_AREA_MAX     = 1000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
     CONTOUR_HW_RATIO_MIN = 1.0;//2.5
@@ -61,9 +61,9 @@ void Armor::init()
     // state machine
     FAST_EXPLORE_TRACK_THRES     = 1;
     FAST_EXPLORE_SEND_STOP_THRES = 5;
-    FAST_TRACK_SLOW_THRES       = 3;
+    FAST_TRACK_SLOW_THRES       = 1; //3
     //FAST_TRACK_CHECK_RATIO       = 0.4;
-    FAST_TRACK_EXPLORE_THRES     = 2;
+    FAST_TRACK_EXPLORE_THRES     = 1; //2
 
     SLOW_EXPLORE_TRACK_THRES     = 1;
     SLOW_EXPLORE_SEND_STOP_THRES = 5;
@@ -98,7 +98,8 @@ int Armor::run(Mat& frame)
         if (found_ctr >= FAST_EXPLORE_TRACK_THRES) {
             serial.sendTarget((bbox.x + bbox.width / 2),
                     (bbox.y + bbox.height / 2), ARMOR_CLASS);
-            transferState(FAST_TRACK_INIT);
+            trackInit(frame);
+            transferState(FAST_TRACK);
             found_ctr   = 0;
             unfound_ctr = 0;
             bbox_last   = bbox;
@@ -156,6 +157,11 @@ int Armor::run(Mat& frame)
                 found_ctr   = 0;
                 unfound_ctr = 0;
             }
+            // add for secure
+            // if it stay FAST TRACK too long, it may misdetect
+            if (found_ctr >= 100) {
+                transferState(FAST_EXPLORE);
+            }
         }
         // sometimes, tracker only miss 1 frame
         if (unfound_ctr >= FAST_TRACK_EXPLORE_THRES) {
@@ -184,7 +190,8 @@ int Armor::run(Mat& frame)
             cout << "Find: " << ARMOR_CLASS << endl;
             serial.sendTarget((bbox.x + bbox.width / 2),
                     (bbox.y + bbox.height / 2), ARMOR_CLASS);
-            transferState(SLOW_TRACK_INIT);
+            trackInit(frame);
+            transferState(SLOW_TRACK);
             found_ctr   = 0;
             unfound_ctr = 0;
             bbox_last   = bbox;
@@ -552,7 +559,7 @@ bool Armor::fastSelectContours(Mat& frame)
     //select contours by area, length, width/height
     for (unsigned int i = 0; i < contours.size(); ++i) {
         long area = contourArea(contours.at(i));
-        //cout << "area:" << area << endl;
+        cout << "area:" << area << endl;
         if (area > CONTOUR_AREA_MAX
                 || area < CONTOUR_AREA_MIN) {
 #  if DRAW == SHOW_ALL
@@ -569,12 +576,12 @@ bool Armor::fastSelectContours(Mat& frame)
         float b = size.height < size.width
             ? size.height
             : size.width;
-        //cout << "length: " << a << endl;
+        cout << "length: " << a << endl;
         if (a < CONTOUR_LENGTH_MIN) {
             continue;
         }
         //check if it is thin
-        //cout << "a / b: " << a / b << endl;
+        cout << "a / b: " << a / b << endl;
         if (a / b > CONTOUR_HW_RATIO_MAX
                 || a / b < CONTOUR_HW_RATIO_MIN) {
 #  if DRAW == SHOW_ALL
@@ -583,8 +590,8 @@ bool Armor::fastSelectContours(Mat& frame)
             continue;
         }
 
-        //cout << "Area Ratio: " << area / size.area() << endl;
-        if (area/size.area() < 0.7)
+        cout << "Area Ratio: " << area / size.area() << endl;
+        if (area/size.area() < 0.6)
             continue;
 
         //float angle = rec.angle;
@@ -629,21 +636,20 @@ bool Armor::fastPairContours()
             ? sizej.height
             : sizej.width;
         // length similar
-        //cout << "Twin length: " << ai/aj << endl;
+        cout << "Twin length: " << ai/aj << endl;
         if (ai / aj > TWIN_LENGTH_RATIO_MAX
                 || aj / ai > TWIN_LENGTH_RATIO_MAX)
             continue;
 
         float anglei = lights[i].angle;
         float anglej = lights[j].angle;
-        //cout << "light(i) angle:" << anglei
-            //<<" light(j) angle" << anglej <<endl;		
+        cout << "light(i) angle:" << anglei
+            <<" light(j) angle" << anglej <<endl;		
         float similarity = matchShapes(lights[i].contour, lights[j].contour, CV_CONTOURS_MATCH_I2, 0);
-        //cout << "Similar: " << similarity << endl;
+        cout << "Similar: " << similarity << endl;
         if (similarity > min_similarity) {
             continue;
         }
-        min_similarity = similarity ;
         //min_similarity = min_similarity < 3.0 ? min_similarity : 3.0;
         if (abs(anglei - anglej) > 10.0) {
             continue;
@@ -652,7 +658,7 @@ bool Armor::fastPairContours()
         float distance_n = abs((pi.x - pj.x) * cos((anglei + 90) * PI / 180)
             + (pi.y - pj.y) * sin((anglei + 90) * PI / 180));
         // normal distance range in about 1 ~ 2 times of length
-        // cout << "Distance n: " << distance_n / ai << endl;
+         cout << "Distance n: " << distance_n / ai << endl;
         // add the large armor on hero, which should be 3 ~ 4 times of length. Maybe negative influence on small armor detection.
         if (distance_n < TWIN_DISTANCE_N_MIN * ai || distance_n > 2 * TWIN_DISTANCE_N_MAX * ai
             || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > 2 * TWIN_DISTANCE_N_MAX * aj) {
@@ -665,6 +671,7 @@ bool Armor::fastPairContours()
         //if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
             //continue;
         //}
+        min_similarity = similarity ;
         light1 = i;
         light2 = j;
         ARMOR_CLASS = SMALL_ARMOR;
@@ -695,7 +702,7 @@ bool Armor::fastPairContours()
     max_x += BOX_EXTRA;
     min_y -= BOX_EXTRA;
     max_y += BOX_EXTRA;
-    if (min_x < 0 || max_x > srcW || min_y < 0 || max_y > srcH) {
+    if (min_x < 0 || max_x > srcW || min_y < 0 || max_y > srcH - 20) {
         return false;
     }
     bbox = Rect2d(min_x, min_y,
