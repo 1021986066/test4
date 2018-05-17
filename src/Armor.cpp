@@ -160,7 +160,7 @@ int Armor::run(Mat& frame)
             // add for secure
             // if it stay FAST TRACK too long, it may misdetect
             if (found_ctr >= 100) {
-                transferState(FAST_EXPLORE);
+                transferState(SLOW_EXPLORE);
             }
         }
         // sometimes, tracker only miss 1 frame
@@ -559,7 +559,7 @@ bool Armor::fastSelectContours(Mat& frame)
     //select contours by area, length, width/height
     for (unsigned int i = 0; i < contours.size(); ++i) {
         long area = contourArea(contours.at(i));
-        cout << "area:" << area << endl;
+        //cout << "area:" << area << endl;
         if (area > CONTOUR_AREA_MAX
                 || area < CONTOUR_AREA_MIN) {
 #  if DRAW == SHOW_ALL
@@ -576,12 +576,12 @@ bool Armor::fastSelectContours(Mat& frame)
         float b = size.height < size.width
             ? size.height
             : size.width;
-        cout << "length: " << a << endl;
+        //cout << "length: " << a << endl;
         if (a < CONTOUR_LENGTH_MIN) {
             continue;
         }
         //check if it is thin
-        cout << "a / b: " << a / b << endl;
+        //cout << "a / b: " << a / b << endl;
         if (a / b > CONTOUR_HW_RATIO_MAX
                 || a / b < CONTOUR_HW_RATIO_MIN) {
 #  if DRAW == SHOW_ALL
@@ -590,7 +590,7 @@ bool Armor::fastSelectContours(Mat& frame)
             continue;
         }
 
-        cout << "Area Ratio: " << area / size.area() << endl;
+        //cout << "Area Ratio: " << area / size.area() << endl;
         if (area/size.area() < 0.6)
             continue;
 
@@ -636,17 +636,17 @@ bool Armor::fastPairContours()
             ? sizej.height
             : sizej.width;
         // length similar
-        cout << "Twin length: " << ai/aj << endl;
+        //cout << "Twin length: " << ai/aj << endl;
         if (ai / aj > TWIN_LENGTH_RATIO_MAX
                 || aj / ai > TWIN_LENGTH_RATIO_MAX)
             continue;
 
         float anglei = lights[i].angle;
         float anglej = lights[j].angle;
-        cout << "light(i) angle:" << anglei
-            <<" light(j) angle" << anglej <<endl;		
+        //cout << "light(i) angle:" << anglei
+            //<<" light(j) angle" << anglej <<endl;		
         float similarity = matchShapes(lights[i].contour, lights[j].contour, CV_CONTOURS_MATCH_I2, 0);
-        cout << "Similar: " << similarity << endl;
+        //cout << "Similar: " << similarity << endl;
         if (similarity > min_similarity) {
             continue;
         }
@@ -658,7 +658,7 @@ bool Armor::fastPairContours()
         float distance_n = abs((pi.x - pj.x) * cos((anglei + 90) * PI / 180)
             + (pi.y - pj.y) * sin((anglei + 90) * PI / 180));
         // normal distance range in about 1 ~ 2 times of length
-         cout << "Distance n: " << distance_n / ai << endl;
+         //cout << "Distance n: " << distance_n / ai << endl;
         // add the large armor on hero, which should be 3 ~ 4 times of length. Maybe negative influence on small armor detection.
         if (distance_n < TWIN_DISTANCE_N_MIN * ai || distance_n > 2 * TWIN_DISTANCE_N_MAX * ai
             || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > 2 * TWIN_DISTANCE_N_MAX * aj) {
