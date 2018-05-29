@@ -34,10 +34,10 @@ class Armor {
 private:
     enum State {
         FAST_EXPLORE,
-        FAST_TRACK_INIT,
+        //FAST_TRACK_INIT,
         FAST_TRACK,
         SLOW_EXPLORE,
-        SLOW_TRACK_INIT,
+        //SLOW_TRACK_INIT,
         SLOW_TRACK
     } state;
 

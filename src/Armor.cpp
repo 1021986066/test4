@@ -39,7 +39,7 @@ void Armor::init()
 
     // select contours
     CONTOUR_AREA_MIN     = 30;//20
-    CONTOUR_AREA_MAX     = 1000;//2000
+    CONTOUR_AREA_MAX     = 3000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
     CONTOUR_HW_RATIO_MIN = 1.0;//2.5
     SLOW_CONTOUR_HW_RATIO_MIN = 3.0;//2.5
@@ -92,32 +92,24 @@ int Armor::run(Mat& frame)
         } else {
             ++unfound_ctr;
             found_ctr = 0;
-            ARMOR_CLASS = NOT_FOUND;
         }
 
         if (found_ctr >= FAST_EXPLORE_TRACK_THRES) {
             serial.sendTarget((bbox.x + bbox.width / 2),
                     (bbox.y + bbox.height / 2), ARMOR_CLASS);
+            // init track with this frame
+            // otherwise, if use next frame, the area may change
             trackInit(frame);
-            transferState(FAST_TRACK);
-            found_ctr   = 0;
-            unfound_ctr = 0;
             bbox_last   = bbox;
+            transferState(FAST_TRACK);
         }
         if (unfound_ctr >= FAST_EXPLORE_SEND_STOP_THRES) {
-            serial.sendTarget(srcW / 2, srcH / 2, ARMOR_CLASS);
+            serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND);
             found_ctr   = 0;
             unfound_ctr = 0;
         }
-    } else if (state == FAST_TRACK_INIT) {
-        trackInit(frame);
-        transferState(FAST_TRACK);
     } else if (state == FAST_TRACK) {
         if (track(frame)) {
-/*            float fps = 1 / (tic() - timer);
-            cout << "fps: " << fps << endl;
-            timer = tic();
-*/
             int x        = bbox.x + bbox.width / 2;
             int y        = bbox.y + bbox.height / 2;
             int x_last   = bbox_last.x + bbox_last.width / 2;
@@ -142,33 +134,37 @@ int Armor::run(Mat& frame)
             found_ctr = 0;
         }
 
-        // check if the box is still tracking armor
         if (found_ctr >= FAST_TRACK_SLOW_THRES) {
-            if (srcW/2 - 30 < bbox.x + bbox.width/2 && bbox.x + bbox.width/2 < srcW/2 + 30) {
+            // check whether the robot slows down
+            if (srcW/2 - 30 < bbox.x + bbox.width/2 
+                    && bbox.x + bbox.width/2 < srcW/2 + 30) {
                 transferState(SLOW_EXPLORE);
-                found_ctr   = 0;
-                unfound_ctr = 0;
             }
+
+            // check whether tracking the wrong area
             Mat roi = frame.clone()(bbox);
             threshold(roi, roi, GRAY_THRESH, 255, THRESH_BINARY);
-            if (countNonZero(roi) < SLOW_TRACK_CHECK_RATIO * total_contour_area) {
-                ARMOR_CLASS = NOT_FOUND;
+            if (countNonZero(roi) 
+                    < SLOW_TRACK_CHECK_RATIO * total_contour_area) {
+                serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND);
                 transferState(FAST_EXPLORE);
-                found_ctr   = 0;
-                unfound_ctr = 0;
             }
+
             // add for secure
-            // if it stay FAST TRACK too long, it may misdetect
-            if (found_ctr >= 100) {
-                transferState(SLOW_EXPLORE);
+            // if it stay FAST TRACK too long, 
+            // it means the target beyond the shooting range
+            // send NOT FOUND LEAVE IMMEDIATELY during frame 500~800, about 3 seconds
+            if (found_ctr >= 500) {
+                serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND_LEAVE);
+                if (found_ctr >= 800) {
+                    transferState(FAST_EXPLORE);
+                }
             }
         }
+
         // sometimes, tracker only miss 1 frame
         if (unfound_ctr >= FAST_TRACK_EXPLORE_THRES) {
-            ARMOR_CLASS = NOT_FOUND;
             transferState(FAST_EXPLORE);
-            unfound_ctr = 0;
-            found_ctr   = 0;
         }
 #if DRAW == SHOW_ALL
         // Draw the tracked object
@@ -183,7 +179,6 @@ int Armor::run(Mat& frame)
         } else {
             ++unfound_ctr;
             found_ctr = 0;
-            ARMOR_CLASS = NOT_FOUND;
         }
 
         if (found_ctr >= SLOW_EXPLORE_TRACK_THRES) {
@@ -191,26 +186,15 @@ int Armor::run(Mat& frame)
             serial.sendTarget((bbox.x + bbox.width / 2),
                     (bbox.y + bbox.height / 2), ARMOR_CLASS);
             trackInit(frame);
-            transferState(SLOW_TRACK);
-            found_ctr   = 0;
-            unfound_ctr = 0;
             bbox_last   = bbox;
+            transferState(SLOW_TRACK);
         }
         if (unfound_ctr >= SLOW_EXPLORE_SEND_STOP_THRES) {
-            transferState(FAST_EXPLORE);
             serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND_LEAVE);
-            found_ctr   = 0;
-            unfound_ctr = 0;
+            transferState(FAST_EXPLORE);
         }
-    } else if (state == SLOW_TRACK_INIT) {
-        trackInit(frame);
-        transferState(SLOW_TRACK);
     } else if (state == SLOW_TRACK) {
         if (track(frame)) {
-/*            float fps = 1 / (tic() - timer);
-            cout << "fps: " << fps << endl;
-            timer = tic();
-*/
             int x        = bbox.x + bbox.width / 2;
             int y        = bbox.y + bbox.height / 2;
             int x_last   = bbox_last.x + bbox_last.width / 2;
@@ -240,18 +224,14 @@ int Armor::run(Mat& frame)
             Mat roi = frame.clone()(bbox);
             threshold(roi, roi, GRAY_THRESH, 255, THRESH_BINARY);
             if (countNonZero(roi) < SLOW_TRACK_CHECK_RATIO * total_contour_area) {
-                ARMOR_CLASS = NOT_FOUND;
+                serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND);
                 transferState(FAST_EXPLORE);
-                found_ctr   = 0;
-                unfound_ctr = 0;
             }
         }
+
         // sometimes, tracker only miss 1 frame
         if (unfound_ctr >= SLOW_TRACK_EXPLORE_THRES) {
-            ARMOR_CLASS = NOT_FOUND;
             transferState(FAST_EXPLORE);
-            unfound_ctr = 0;
-            found_ctr   = 0;
         }
 #if DRAW == SHOW_ALL
         // Draw the tracked object
@@ -268,6 +248,8 @@ int Armor::run(Mat& frame)
 
 void Armor::transferState(State s)
 {
+    found_ctr   = 0;
+    unfound_ctr = 0;
     state = s;
     cout << "Transfer to State: " << s << endl;
 }
@@ -550,8 +532,6 @@ bool Armor::fastSelectContours(Mat& frame)
     imshow("gray", bin);
 #endif
     vector<vector<Point> > contours;
-    //vector<long> areas;
-    //vector<Light> lights;
     areas.clear();
     lights.clear();
     findContours(bin, contours,
@@ -594,10 +574,6 @@ bool Armor::fastSelectContours(Mat& frame)
         if (area/size.area() < 0.6)
             continue;
 
-        //float angle = rec.angle;
-        //angle = - angle;
-        //if (size.width < size.height)		
-            //angle += 90.0;		
         //cout << "RotatedRect: " << angle << endl;
         LeastSquare leasq(contours[i]);
         //cout << "LeastSquare: " << leasq.getAngle() << " | " << leasq.getAngleh() << endl;
@@ -618,7 +594,6 @@ bool Armor::fastPairContours()
 {
 
     int light1 = -1, light2 = -1;
-    //float min_angle = TWIN_ANGEL_MAX;
     float min_similarity = 3.0;
     sort(lights.begin(), lights.begin() + lights.size()-1, less_x);
     // cout << "lights: " << lights.size() << endl;
@@ -650,7 +625,6 @@ bool Armor::fastPairContours()
         if (similarity > min_similarity) {
             continue;
         }
-        //min_similarity = min_similarity < 3.0 ? min_similarity : 3.0;
         if (abs(anglei - anglej) > 10.0) {
             continue;
         }
@@ -664,13 +638,6 @@ bool Armor::fastPairContours()
             || distance_n < TWIN_DISTANCE_N_MIN * aj || distance_n > 2 * TWIN_DISTANCE_N_MAX * aj) {
             continue;
         }
-        // direction distance should be small
-        //float distance_t = abs((pi.x - pj.x) * cos((anglei)*PI / 180)
-            //+ (pi.y - pj.y) * sin((anglei)*PI / 180));
-        //cout << "Distance t: " << distance_t / ai << endl;
-        //if (distance_t > TWIN_DISTANCE_T_MAX * ai || distance_t > TWIN_DISTANCE_T_MAX * aj) {
-            //continue;
-        //}
         min_similarity = similarity ;
         light1 = i;
         light2 = j;
@@ -726,8 +693,6 @@ bool Armor::slowSelectContours(Mat& frame)
     imshow("gray", bin);
 #endif
     vector<vector<Point> > contours;
-    //vector<long> areas;
-    //vector<Light> lights;
     areas.clear();
     lights.clear();
     findContours(bin, contours,
@@ -770,10 +735,8 @@ bool Armor::slowSelectContours(Mat& frame)
         if (area/size.area() < 0.7)
             continue;
 
-        //cout << "RotatedRect: " << angle << endl;
-        //LeastSquare leasq(contours[i]);
-        //cout << "LeastSquare: " << leasq.getAngle() << " | " << leasq.getAngleh() << endl;
         float angle = -rec.angle;
+        //cout << "RotatedRect: " << angle << endl;
         if (size.width < size.height)		
             angle += 90.0;		
         if (angle > 90.0 + CONTOUR_ANGLE_MAX  
