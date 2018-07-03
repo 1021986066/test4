@@ -93,21 +93,53 @@ int main(void)
         // use 2 frames for parallel process
         // when loading picture from camera to frame1, process frame2
 #if OPENMP_SWITCH == OPENMP_RUN
-        Mat frame1, frame2;
-        Mat bgrSplit1[3], bgrSplit2[3];
+        Mat frame1, frame2, frame3;
+        Mat bgrSplit1[3], bgrSplit2[3], bgrSplit3[3];
         bool ok = true;
 
         for (int i=0; i<10; ++i)
-            video.read(frame2);
+            video.read(frame3);
 
-        split(frame2, bgrSplit2);
-        frame2 = (bgrSplit2[0] - bgrSplit2[1]) + (bgrSplit2[0] - bgrSplit2[2]);
+        split(frame3, bgrSplit3);
+        frame3 = (bgrSplit3[0] - bgrSplit3[1]) + (bgrSplit3[0] - bgrSplit3[2]);
+        video.read(frame2);
         while (ok) {
 #       pragma omp parallel sections 
             {
 #           pragma omp section
                 {
                     video.read(frame1);
+                }
+#           pragma omp section
+                {
+                    split(frame2, bgrSplit2);
+                    frame2 = (bgrSplit2[0] - bgrSplit2[1]) + (bgrSplit2[0] - bgrSplit2[2]);
+                }
+#           pragma omp section
+                {
+                    if (armor.run(frame3) < 0) {
+                        cout << "Error!" << endl;
+                        ok = false;
+                    }
+                }
+#           if RECORD == RECORD_ON
+#           pragma omp section
+                {
+                    g_writer.write(frame3);
+                }
+#           endif
+            }
+            // wait for both section completed
+#       pragma omp barrier
+            /*****************************************/
+#       pragma omp parallel sections
+            {
+#           pragma omp section
+                {
+                    video.read(frame3);
+                }
+#           pragma omp section
+                {
                     split(frame1, bgrSplit1);
                     frame1 = (bgrSplit1[0] - bgrSplit1[1]) + (bgrSplit1[0] - bgrSplit1[2]);
                 }
@@ -125,16 +157,17 @@ int main(void)
                 }
 #           endif
             }
-            // wait for both section completed
-#       pragma omp barrier
             /*****************************************/
 #       pragma omp parallel sections
             {
 #           pragma omp section
                 {
                     video.read(frame2);
-                    split(frame2, bgrSplit2);
-                    frame2 = (bgrSplit2[0] - bgrSplit2[1]) + (bgrSplit2[0] - bgrSplit2[2]);
+                }
+#           pragma omp section
+                {
+                    split(frame3, bgrSplit3);
+                    frame3 = (bgrSplit3[0] - bgrSplit3[1]) + (bgrSplit3[0] - bgrSplit3[2]);
                 }
 #           pragma omp section
                 {
