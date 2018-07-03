@@ -23,7 +23,7 @@ void Armor::init()
     timer = tic();
 
     // state machine
-    state = SLOW_EXPLORE;
+    state = FAST_EXPLORE;
 
     found_ctr   = 0;
     unfound_ctr = 0;
@@ -35,17 +35,17 @@ void Armor::init()
     BORDER_IGNORE = 10;
     BOX_EXTRA     = 10;
 
-    GRAY_THRESH   = 240;
+    GRAY_THRESH   = 200;
 
     // select contours
-    CONTOUR_AREA_MIN     = 30;//20
-    CONTOUR_AREA_MAX     = 3000;//2000
-    CONTOUR_LENGTH_MIN   = 10;//20
+    CONTOUR_AREA_MIN     = 20;//20
+    CONTOUR_AREA_MAX     = 2000;//2000
+    CONTOUR_LENGTH_MIN   = 5;//20
     CONTOUR_HW_RATIO_MIN = 1.0;//2.5
-    SLOW_CONTOUR_HW_RATIO_MIN = 3.0;//2.5
+    SLOW_CONTOUR_HW_RATIO_MIN = 2.0;//2.5
     CONTOUR_HW_RATIO_MAX = 15;
     SLOW_CONTOUR_HW_RATIO_MAX = 7;
-    CONTOUR_ANGLE_MAX    = 20.0;
+    CONTOUR_ANGLE_MAX    = 30.0;
 
     // pair lights
     TWIN_ANGEL_MAX        = 5.001;
@@ -225,13 +225,13 @@ int Armor::run(Mat& frame)
             threshold(roi, roi, GRAY_THRESH, 255, THRESH_BINARY);
             if (countNonZero(roi) < SLOW_TRACK_CHECK_RATIO * total_contour_area) {
                 serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND);
-                transferState(SLOW_EXPLORE);
+                transferState(FAST_EXPLORE);
             }
         }
 
         // sometimes, tracker only miss 1 frame
         if (unfound_ctr >= SLOW_TRACK_EXPLORE_THRES) {
-            transferState(SLOW_EXPLORE);
+            transferState(FAST_EXPLORE);
         }
 #if DRAW == SHOW_ALL
         // Draw the tracked object

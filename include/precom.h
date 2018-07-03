@@ -23,8 +23,8 @@
 
 #if PLATFORM == PC
 #   define VIDEO         VIDEO_CAMERA
-#   define DRAW          SHOW_ALL
-#   define OPENMP_SWITCH OPENMP_STOP
+#   define DRAW          NO_SHOW
+#   define OPENMP_SWITCH OPENMP_RUN
 #elif PLATFORM == MANIFOLD
 #   define VIDEO         VIDEO_CAMERA
 #   define DRAW          NO_SHOW

@@ -94,17 +94,22 @@ int main(void)
         // when loading picture from camera to frame1, process frame2
 #if OPENMP_SWITCH == OPENMP_RUN
         Mat frame1, frame2;
+        Mat bgrSplit1[3], bgrSplit2[3];
         bool ok = true;
 
         for (int i=0; i<10; ++i)
             video.read(frame2);
 
+        split(frame2, bgrSplit2);
+        frame2 = (bgrSplit2[0] - bgrSplit2[1]) + (bgrSplit2[0] - bgrSplit2[2]);
         while (ok) {
 #       pragma omp parallel sections 
             {
 #           pragma omp section
                 {
                     video.read(frame1);
+                    split(frame1, bgrSplit1);
+                    frame1 = (bgrSplit1[0] - bgrSplit1[1]) + (bgrSplit1[0] - bgrSplit1[2]);
                 }
 #           pragma omp section
                 {
@@ -128,6 +133,8 @@ int main(void)
 #           pragma omp section
                 {
                     video.read(frame2);
+                    split(frame2, bgrSplit2);
+                    frame2 = (bgrSplit2[0] - bgrSplit2[1]) + (bgrSplit2[0] - bgrSplit2[2]);
                 }
 #           pragma omp section
                 {
@@ -150,6 +157,10 @@ int main(void)
         for (int i=0; i<10; ++i)
             video.read(frame);
         while (video.read(frame)) {
+            imshow("color", frame);
+            static Mat bgrSplit[3];
+            split(frame, bgrSplit);
+            frame = (bgrSplit[0] - bgrSplit[1]) + (bgrSplit [0] - bgrSplit[2]);
 #       if RECORD == RECORD_ON
             g_writer.write(frame);
 #       endif
