@@ -24,8 +24,9 @@ struct Light {
     RotatedRect rect;
     vector<Point> contour;
     float angle;
-    Light(RotatedRect & r, vector<Point>& c, float & ag):
-        rect(r), contour(c), angle(ag){};
+    float area;
+    Light(RotatedRect & r, vector<Point>& c, float & ag, float & a):
+        rect(r), contour(c), angle(ag), area(a){};
     //bool operator < (Light & l2) {
         //return this->rect.center.x < l2.rect.center.x;
     //}
@@ -91,8 +92,8 @@ private:
 
     int ARMOR_CLASS;
 
-    vector<long> areas;
-    vector<Light> lights;
+    //vector<long> areas;
+    //vector<Light> lights;
 public:
     Armor();
     void init();
@@ -101,11 +102,11 @@ private:
     void transferState(State s);
     bool explore(Mat& frame);
     bool fastExplore(Mat& frame);
-    bool fastSelectContours(Mat& frame);
-    bool fastPairContours();
+    bool fastSelectContours(Mat& frame, vector<Light>& lights);
+    bool fastPairContours(vector<Light>& lights);
     bool slowExplore(Mat& frame);
-    bool slowSelectContours(Mat& frame);
-    bool slowPairContours();
+    bool slowSelectContours(Mat& frame, vector<Light>& lights);
+    bool slowPairContours(vector<Light>& lights);
     void trackInit(Mat& frame);
     bool track(Mat& frame);
 };
