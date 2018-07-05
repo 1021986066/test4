@@ -94,12 +94,14 @@ bool GlobalCamera::read(Mat& src)
         //double exposure;
         //CameraGetExposureTime(hCamera, &exposure);
         //cout << "Exposure Time: " << exposure << endl;
-        CameraImageProcess(hCamera, pbyBuffer, g_pRgbBuffer, &sFrameInfo);
+        //CameraImageProcess(hCamera, pbyBuffer, g_pRgbBuffer, &sFrameInfo);
         if (iplImage) {
             cvReleaseImageHeader(&iplImage);
         }
-        iplImage = cvCreateImageHeader(cvSize(sFrameInfo.iWidth, sFrameInfo.iHeight), IPL_DEPTH_8U, channel);
-        cvSetData(iplImage, g_pRgbBuffer, sFrameInfo.iWidth * channel); //此处只是设置指针，无图像块数据拷贝，不需担心转换效率
+        //iplImage = cvCreateImageHeader(cvSize(sFrameInfo.iWidth, sFrameInfo.iHeight), IPL_DEPTH_8U, channel);
+        iplImage = cvCreateImageHeader(cvSize(sFrameInfo.iWidth, sFrameInfo.iHeight), IPL_DEPTH_8U, 1);
+        //cvSetData(iplImage, g_pRgbBuffer, sFrameInfo.iWidth * channel); //此处只是设置指针，无图像块数据拷贝，不需担心转换效率
+        cvSetData(iplImage, pbyBuffer, sFrameInfo.iWidth * 1); //此处只是设置指针，无图像块数据拷贝，不需担心转换效率
         src = cvarrToMat(iplImage);
 //以下两种方式都可以显示图像或者处理图像
 #if 0
