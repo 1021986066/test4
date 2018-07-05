@@ -95,15 +95,15 @@ int Armor::run(Mat& frame)
 #if VIDEO == VIDEO_FILE
     cvtColor(frame, frame, CV_BGR2GRAY);
 #endif
+#if DRAW == SHOW_ALL
+    imshow("frame", frame);
+#endif
 #if BAYER_HACK == HACKING_ON
     static Mat blue(frame.rows/2, frame.cols/2, CV_8UC1);
     static Mat red(frame.rows/2, frame.cols/2, CV_8UC1);
     splitBayerBG(frame, blue, red);
     //frame = blue - red;
     frame = red;
-#endif
-#if DRAW == SHOW_ALL
-    imshow("frame", frame);
 #endif
 
     if (state == FAST_EXPLORE) {
@@ -694,6 +694,9 @@ bool Armor::fastPairContours(vector<Light>& lights)
     if (min_x < 0 || max_x > srcW || min_y < 0 || max_y > srcH - 20) {
         return false;
     }
+    if ((max_y - min_y) > (max_x - min_x)) {
+        return false;
+    }
     bbox = Rect2d(min_x, min_y,
         max_x - min_x, max_y - min_y);
     total_contour_area = lights.at(light1).area + lights.at(light2).area;
@@ -758,7 +761,10 @@ bool Armor::slowSelectContours(Mat& frame, vector<Light>& lights)
         if (area/size.area() < 0.7)
             continue;
 
-        float angle = -rec.angle;
+        LeastSquare leasq(contours[i]);
+        //cout << "LeastSquare: " << leasq.getAngle() << " | " << leasq.getAngleh() << endl;
+        float angle = leasq.getAngleh();
+        //float angle = -rec.angle;
         //cout << "RotatedRect: " << angle << endl;
         if (size.width < size.height)		
             angle += 90.0;		
