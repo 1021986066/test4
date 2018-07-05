@@ -109,6 +109,7 @@ private:
     bool slowPairContours(vector<Light>& lights);
     void trackInit(Mat& frame);
     bool track(Mat& frame);
+    void splitBayerBG(Mat& frame, Mat& blue, Mat& red);
 };
 
 class LeastSquare		

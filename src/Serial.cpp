@@ -83,6 +83,11 @@ void Serial::init()
 void Serial::sendTarget(int target_x, int target_y, int is_found)
 {
 
+#if BAYER_HACK == HACKING_ON
+    target_x *= 2;
+    target_y *= 2;
+#endif
+
 #if PLATFORM == MANIFOLD
     if (fd < 0) {
         perror("open_port error");
@@ -95,8 +100,6 @@ void Serial::sendTarget(int target_x, int target_y, int is_found)
         return;
     }
 #endif
-    //int converted_x = int(target_x * (18000.0 / 640));
-    //int converted_y = int((480 - target_y) * (10000.0 / 480));
     if (target_x < 0 || target_x > 640 || target_y < 0 || target_y > 480) {
         is_found = 0;
         target_x = 320;

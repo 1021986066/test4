@@ -1,4 +1,5 @@
 #include "CameraApi.h" //相机SDK的API头文件
+#include "precom.h"
 #include <iostream>
 
 #include "opencv2/core/core.hpp"
@@ -94,14 +95,19 @@ bool GlobalCamera::read(Mat& src)
         //double exposure;
         //CameraGetExposureTime(hCamera, &exposure);
         //cout << "Exposure Time: " << exposure << endl;
-        //CameraImageProcess(hCamera, pbyBuffer, g_pRgbBuffer, &sFrameInfo);
+#if BAYER_HACK == HACKING_OFF
+        CameraImageProcess(hCamera, pbyBuffer, g_pRgbBuffer, &sFrameInfo);
+#endif
         if (iplImage) {
             cvReleaseImageHeader(&iplImage);
         }
-        //iplImage = cvCreateImageHeader(cvSize(sFrameInfo.iWidth, sFrameInfo.iHeight), IPL_DEPTH_8U, channel);
+#if BAYER_HACK == HACKING_OFF
+        iplImage = cvCreateImageHeader(cvSize(sFrameInfo.iWidth, sFrameInfo.iHeight), IPL_DEPTH_8U, channel);
+        cvSetData(iplImage, g_pRgbBuffer, sFrameInfo.iWidth * channel); //此处只是设置指针，无图像块数据拷贝，不需担心转换效率
+#elif BAYER_HACK == HACKING_ON
         iplImage = cvCreateImageHeader(cvSize(sFrameInfo.iWidth, sFrameInfo.iHeight), IPL_DEPTH_8U, 1);
-        //cvSetData(iplImage, g_pRgbBuffer, sFrameInfo.iWidth * channel); //此处只是设置指针，无图像块数据拷贝，不需担心转换效率
-        cvSetData(iplImage, pbyBuffer, sFrameInfo.iWidth * 1); //此处只是设置指针，无图像块数据拷贝，不需担心转换效率
+        cvSetData(iplImage, pbyBuffer, sFrameInfo.iWidth); //此处只是设置指针，无图像块数据拷贝，不需担心转换效率
+#endif
         src = cvarrToMat(iplImage);
 //以下两种方式都可以显示图像或者处理图像
 #if 0

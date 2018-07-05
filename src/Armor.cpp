@@ -23,24 +23,38 @@ void Armor::init()
     timer = tic();
 
     // state machine
-    state = SLOW_EXPLORE;
+    state = FAST_EXPLORE;
 
     found_ctr   = 0;
     unfound_ctr = 0;
-
+#if BAYER_HACK == HACKING_OFF
     srcW = 640;
     srcH = 480;
+#elif BAYER_HACK == HACKING_ON
+    srcW = 320;
+    srcH = 240;
+#endif
 
     // track
     BORDER_IGNORE = 10;
     BOX_EXTRA     = 10;
 
+#if BAYER_HACK == HACKING_OFF
     GRAY_THRESH   = 240;
+#elif BAYER_HACK == HACKING_ON
+    GRAY_THRESH   = 240;
+#endif
 
     // select contours
+#if BAYER_HACK == HACKING_OFF
     CONTOUR_AREA_MIN     = 30;//20
     CONTOUR_AREA_MAX     = 3000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
+#elif BAYER_HACK == HACKING_ON
+    CONTOUR_AREA_MIN     = 10;//20
+    CONTOUR_AREA_MAX     = 1000;//2000
+    CONTOUR_LENGTH_MIN   = 5;//20
+#endif
     CONTOUR_HW_RATIO_MIN = 1.0;//2.5
     SLOW_CONTOUR_HW_RATIO_MIN = 3.0;//2.5
     CONTOUR_HW_RATIO_MAX = 15;
@@ -54,7 +68,7 @@ void Armor::init()
     TWIN_DISTANCE_N_MIN   = 1.3;//1.7
     SLOW_TWIN_DISTANCE_N_MIN   = 2.0;//1.7
     TWIN_DISTANCE_N_MAX   = 3.8;//3.8
-    SLOW_TWIN_DISTANCE_N_MAX   = 3.8;//1.7
+    SLOW_TWIN_DISTANCE_N_MAX   = 2.6;//1.7
     TWIN_DISTANCE_T_MAX   = 1.4;
     TWIN_AREA_MAX         = 1.2;
 
@@ -80,6 +94,13 @@ int Armor::run(Mat& frame)
         return -1;
 #if VIDEO == VIDEO_FILE
     cvtColor(frame, frame, CV_BGR2GRAY);
+#endif
+#if BAYER_HACK == HACKING_ON
+    static Mat blue(frame.rows/2, frame.cols/2, CV_8UC1);
+    static Mat red(frame.rows/2, frame.cols/2, CV_8UC1);
+    splitBayerBG(frame, blue, red);
+    //frame = blue - red;
+    frame = red;
 #endif
 #if DRAW == SHOW_ALL
     imshow("frame", frame);
@@ -191,7 +212,7 @@ int Armor::run(Mat& frame)
         }
         if (unfound_ctr >= SLOW_EXPLORE_SEND_STOP_THRES) {
             serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND_LEAVE);
-            //transferState(FAST_EXPLORE);
+            transferState(FAST_EXPLORE);
         }
     } else if (state == SLOW_TRACK) {
         if (track(frame)) {
@@ -225,13 +246,13 @@ int Armor::run(Mat& frame)
             threshold(roi, roi, GRAY_THRESH, 255, THRESH_BINARY);
             if (countNonZero(roi) < SLOW_TRACK_CHECK_RATIO * total_contour_area) {
                 serial.sendTarget(srcW / 2, srcH / 2, NOT_FOUND);
-                transferState(SLOW_EXPLORE);
+                transferState(FAST_EXPLORE);
             }
         }
 
         // sometimes, tracker only miss 1 frame
         if (unfound_ctr >= SLOW_TRACK_EXPLORE_THRES) {
-            transferState(SLOW_EXPLORE);
+            transferState(FAST_EXPLORE);
         }
 #if DRAW == SHOW_ALL
         // Draw the tracked object
@@ -868,4 +889,23 @@ bool Armor::slowPairContours(vector<Light>& lights)
         max_x - min_x, max_y - min_y);
     total_contour_area = lights.at(light1).area + lights.at(light2).area;
     return true;
+}
+
+void Armor::splitBayerBG(Mat& frame, Mat& blue, Mat& red)
+{
+    uchar* data;
+    uchar* bayer_data[2];
+    for (int i=0; i<frame.rows; ++i) {
+        data = frame.ptr<uchar>(i);
+        bayer_data[0] = blue.ptr<uchar>(i/2);
+        for (int j=0; j<blue.cols; ++j, data+=2) {
+            bayer_data[0][j] = *data;
+        }
+        data = frame.ptr<uchar>(++i)+1;
+        bayer_data[1] = red.ptr<uchar>(i/2);
+        for (int j=0; j<red.cols; ++j, data+=2) {
+            bayer_data[1][j] = *data;
+        }
+    }
+
 }

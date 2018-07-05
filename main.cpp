@@ -147,52 +147,13 @@ int main(void)
         }
 #   else
         Mat frame;
-        Mat bayer[3];
-        uchar* bayer_data[3];
-        uchar* data;
         for (int i=0; i<10; ++i)
             video.read(frame);
-        bayer[0] = Mat(frame.rows/2, frame.cols/2, CV_8UC1);
-        bayer[1] = Mat(frame.rows/2, frame.cols/2, CV_8UC1);
-        bayer[2] = Mat(frame.rows, frame.cols/2, CV_8UC1);
         while (video.read(frame)) {
 #       if RECORD == RECORD_ON
             g_writer.write(frame);
 #       endif
-            for (int i=0; i<frame.rows; ++i) {
-                data = frame.ptr<uchar>(i);
-                bayer_data[0] = bayer[0].ptr<uchar>(i/2);
-                for (int j=0; j<bayer[0].cols; ++j, data+=2) {
-                    bayer_data[0][j] = *data;
-                }
-                data = frame.ptr<uchar>(++i)+1;
-                bayer_data[1] = bayer[1].ptr<uchar>(i/2);
-                for (int j=0; j<bayer[1].cols; ++j, data+=2) {
-                    bayer_data[1][j] = *data;
-                }
-            }
-            //for (int i=0; i<frame.rows; ++i) {
-                //data = frame.ptr<uchar>(i);
-                //bayer_data[0] = bayer[0].ptr<uchar>(i/2);
-                //bayer_data[2] = bayer[2].ptr<uchar>(i);
-                //for (int j=0; j<frame.cols; j+=2) {
-                    //*(bayer_data[0]+j/2)=*(data+j);
-                    //*(bayer_data[2]+j/2+1)=*(data+j+1);
-                //}
-                //data = frame.ptr<uchar>(++i);
-                //bayer_data[1] = bayer[1].ptr<uchar>(i/2);
-                //bayer_data[2] = bayer[2].ptr<uchar>(i);
-                //for (int j=0; j<frame.cols; j+=2) {
-                    //*(bayer_data[2]+j/2)=*(data+j);
-                    //*(bayer_data[1]+j/2+1)=*(data+j+1);
-                //}
-            //}
-            //cout << bayer[0] << endl;
-            imshow("Bayer Blue", bayer[0]);
-            imshow("Bayer Red", bayer[1]);
-            bayer[0] = bayer[0] - bayer[1];
-            armor.run(bayer[0]);
-            //imshow("Bayer 2", bayer[2]);
+            armor.run(frame);
             cv::waitKey(1);
         }
         cout << "End!" << endl;
