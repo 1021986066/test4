@@ -42,7 +42,7 @@ void Armor::init()
 #if BAYER_HACK == HACKING_OFF
     GRAY_THRESH   = 240;
 #elif BAYER_HACK == HACKING_ON
-    GRAY_THRESH   = 240;
+    GRAY_THRESH   = 20;
 #endif
 
     // select contours
@@ -51,7 +51,7 @@ void Armor::init()
     CONTOUR_AREA_MAX     = 3000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
 #elif BAYER_HACK == HACKING_ON
-    CONTOUR_AREA_MIN     = 10;//20
+    CONTOUR_AREA_MIN     = 5;//20
     CONTOUR_AREA_MAX     = 1000;//2000
     CONTOUR_LENGTH_MIN   = 5;//20
 #endif
