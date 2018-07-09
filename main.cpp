@@ -32,8 +32,12 @@ limitations under the License.
 using namespace cv;
 using namespace std;
 
-int main(void)
+int main(int argc, char *argv[])
 {
+    if (argv[1] == NULL) {
+        cout << "argv[1] NUll" << endl;
+        return -1;
+    }
     while(1) {
 #if VIDEO == VIDEO_CAMERA
         GlobalCamera video;
@@ -68,7 +72,7 @@ int main(void)
 #endif
         // Read video
 #if VIDEO == VIDEO_CAMERA
-        if (video.init() == 0) {
+        if (video.init(argv[1]) == 0) {
             cout << "Global Shutter Camera Init successfully!" << endl;
         } else {
             cout << "Global Shutter Camera Init Failed!" << endl;
