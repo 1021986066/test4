@@ -20,6 +20,7 @@
 using namespace cv;
 using namespace std;
 
+// the possible side light of armor
 struct Light {
     RotatedRect rect;
     vector<Point> contour;
@@ -31,6 +32,8 @@ struct Light {
         //return this->rect.center.x < l2.rect.center.x;
     //}
 };
+
+// the overall class to detect armor
 class Armor {
 private:
     enum State {
@@ -112,6 +115,7 @@ private:
     void splitBayerBG(Mat& frame, Mat& blue, Mat& red);
 };
 
+// use least square to calculate the angle
 class LeastSquare		
 {		
 public:		

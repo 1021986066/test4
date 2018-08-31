@@ -891,6 +891,7 @@ bool Armor::slowPairContours(vector<Light>& lights)
     return true;
 }
 
+// use the raw date with Bayer format to extract blue region and red region.
 void Armor::splitBayerBG(Mat& frame, Mat& blue, Mat& red)
 {
     uchar* data;

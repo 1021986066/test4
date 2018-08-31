@@ -4,3 +4,5 @@ build
 *.txt~
 *.h~
 *.cpp~
+.vscode
+.ycm_extra_conf.py
