@@ -150,6 +150,7 @@ int main(void)
         for (int i=0; i<10; ++i)
             video.read(frame);
         while (video.read(frame)) {
+            imshow("color", frame);
 #       if RECORD == RECORD_ON
             g_writer.write(frame);
 #       endif

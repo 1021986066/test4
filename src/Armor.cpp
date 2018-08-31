@@ -42,7 +42,7 @@ void Armor::init()
 #if BAYER_HACK == HACKING_OFF
     GRAY_THRESH   = 240;
 #elif BAYER_HACK == HACKING_ON
-    GRAY_THRESH   = 20;
+    GRAY_THRESH   = 10;
 #endif
 
     // select contours
@@ -100,7 +100,7 @@ int Armor::run(Mat& frame)
     static Mat red(frame.rows/2, frame.cols/2, CV_8UC1);
     splitBayerBG(frame, blue, red);
     //frame = blue - red;
-    frame = red;
+    frame = red - blue;
 #endif
 #if DRAW == SHOW_ALL
     imshow("frame", frame);
