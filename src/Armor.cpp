@@ -42,7 +42,7 @@ void Armor::init()
 #if BAYER_HACK == HACKING_OFF
     GRAY_THRESH   = 240;
 #elif BAYER_HACK == HACKING_ON
-    GRAY_THRESH   = 240;
+    GRAY_THRESH   = 10;
 #endif
 
     // select contours
@@ -51,7 +51,7 @@ void Armor::init()
     CONTOUR_AREA_MAX     = 3000;//2000
     CONTOUR_LENGTH_MIN   = 10;//20
 #elif BAYER_HACK == HACKING_ON
-    CONTOUR_AREA_MIN     = 10;//20
+    CONTOUR_AREA_MIN     = 5;//20
     CONTOUR_AREA_MAX     = 1000;//2000
     CONTOUR_LENGTH_MIN   = 5;//20
 #endif
@@ -103,7 +103,7 @@ int Armor::run(Mat& frame)
     static Mat red(frame.rows/2, frame.cols/2, CV_8UC1);
     splitBayerBG(frame, blue, red);
     //frame = blue - red;
-    frame = red;
+    frame = red - blue;
 #endif
 
     if (state == FAST_EXPLORE) {
@@ -897,6 +897,7 @@ bool Armor::slowPairContours(vector<Light>& lights)
     return true;
 }
 
+// use the raw date with Bayer format to extract blue region and red region.
 void Armor::splitBayerBG(Mat& frame, Mat& blue, Mat& red)
 {
     uchar* data;

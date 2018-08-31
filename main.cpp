@@ -72,7 +72,6 @@ int main(void)
             cout << "Global Shutter Camera Init successfully!" << endl;
         } else {
             cout << "Global Shutter Camera Init Failed!" << endl;
-            //return -1;
             continue;
         }
 #endif
@@ -82,7 +81,6 @@ int main(void)
             cout << "Open Video Successfully!" << endl;
         else {
             cout << "Open Video failed!" << endl;
-            //return -1;
             continue;
         }
 #endif
@@ -150,6 +148,7 @@ int main(void)
         for (int i=0; i<10; ++i)
             video.read(frame);
         while (video.read(frame)) {
+            imshow("color", frame);
 #       if RECORD == RECORD_ON
             g_writer.write(frame);
 #       endif
