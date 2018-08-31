@@ -27,6 +27,7 @@
 - Use Machine Learning to pair the lights
 - Use Object Detection to explore the armor
 - Recognize the digit in the center
+- Use two camera at the same time
 
 ## PS
 
