@@ -1,3 +1,4 @@
+// Auther: JachinShen(jachinshen@foxmail.com)
 #include "CameraApi.h" //相机SDK的API头文件
 #include "precom.h"
 #include <iostream>

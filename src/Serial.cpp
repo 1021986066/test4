@@ -1,3 +1,4 @@
+// Auther: JachinShen(jachinshen@foxmail.com)
 #include "Serial.h"
 int Serial::set_opt(int fd, int nSpeed, int nBits, char nEvent, int nStop)
 {

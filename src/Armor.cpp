@@ -1,3 +1,4 @@
+// Auther: JachinShen(jachinshen@foxmail.com)
 #include "Armor.h"
 double tic()
 {
