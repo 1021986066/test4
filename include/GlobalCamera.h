@@ -1,6 +1,6 @@
 // Auther: JachinShen(jachinshen@foxmail.com)
 #include "CameraApi.h" //相机SDK的API头文件
-#include "precom.h"
+#include "ctrl_param.h"
 #include <iostream>
 
 #include "opencv2/core/core.hpp"
@@ -10,6 +10,7 @@
 using namespace cv;
 using namespace std;
 
+#define BAYER_HACK HACKING_ON
 class GlobalCamera {
 private:
     unsigned char* g_pRgbBuffer; //处理后数据缓存区
