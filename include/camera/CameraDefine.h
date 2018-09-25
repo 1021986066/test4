@@ -2,7 +2,7 @@
 #ifndef _CAMERA_DEFINE_H_
 #define _CAMERA_DEFINE_H_
 
-#include "CameraStatus.h"
+#include "camera/CameraStatus.h"
 
 #define MAX_CROSS_LINE 9
 

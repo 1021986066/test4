@@ -6,11 +6,12 @@
 // Detect Armor in RoboMaster 2018
 
 // Precompile paramaters
-#include "Armor.h"
+#include "armor.h"
 #include "ctrl_param.h"
 #include "platform.h"
+#include "bayer_hack.h"
 // wrapper for Global Shutter Camera
-#include "GlobalCamera.h"
+#include "camera/camera_wrapper.h"
 
 #include <pwd.h>
 #include <sys/types.h>
@@ -24,6 +25,9 @@
 using namespace cv;
 using std::cout;
 using std::endl;
+using std::string;
+using std::fstream;
+using std::ios;
 
 #ifdef _DEBUG
 #define VIDEO_SOURCE FROM_FILE
@@ -67,7 +71,7 @@ int main(void) {
   while (1) {
 #if VIDEO_SOURCE == FROM_CAMERA
     cout << "Fetch Image from Camera!" << endl;
-    GlobalCamera video;
+    GlobalShutterCamera video;
 #elif VIDEO_SOURCE == FROM_FILE
     cout << "Fetch Image from File!" << endl;
     VideoCapture video;

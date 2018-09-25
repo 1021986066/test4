@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-#include "Armor.h"
+#include "armor.h"
 
 using namespace cv;
 using std::cout;
