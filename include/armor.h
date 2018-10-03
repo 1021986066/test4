@@ -1,6 +1,7 @@
 #if !defined(RM_ARMOR_H_)
 #define RM_ARMOR_H_
 
+#include "bayer_hack.h"
 #include "kcftracker.hpp"
 #include "least_square.h"
 #include "uart.h"

@@ -7,9 +7,8 @@
 
 // Precompile paramaters
 #include "armor.h"
-#include "ctrl_param.h"
-#include "platform.h"
 #include "bayer_hack.h"
+#include "platform.h"
 // wrapper for Global Shutter Camera
 #include "camera/camera_wrapper.h"
 
@@ -25,9 +24,18 @@
 using namespace cv;
 using std::cout;
 using std::endl;
-using std::string;
 using std::fstream;
 using std::ios;
+using std::string;
+
+#define FROM_FILE 0
+#define FROM_CAMERA 1
+
+#define OPENMP_STOP 0
+#define OPENMP_RUN 1
+
+#define RECORD_OFF 0
+#define RECORD_ON 1
 
 #ifdef _DEBUG
 #define VIDEO_SOURCE FROM_FILE
@@ -41,28 +49,7 @@ using std::ios;
 
 #define RECORD RECORD_OFF
 
-string getRecordFileName() {
-  fstream video_file;
-  string video_id_str;
-  int video_id;
-  string file_name;
-
-  // Read record file name.
-  // Add one and write back to promise no same file name.
-  // Otherwise the newer one will cover older one.
-  video_file.open("../record_file_name.txt", ios::in);
-  video_file >> video_id_str;
-  video_file.close();
-
-  video_file.open("../record_file_name.txt", ios::out);
-  video_id = atoi(video_id_str.c_str()) + 1;
-  video_file << video_id;
-  video_file.close();
-
-  file_name = string(getpwuid(getuid())->pw_dir) + "/Videos/Record" +
-              video_id_str + ".avi";
-  return file_name;
-}
+string getRecordFileName();
 
 int main(void) {
   // The main while loop should only run once if everything is okay.
@@ -96,8 +83,7 @@ int main(void) {
       // If failed, retry.
       continue;
     }
-#endif
-#if VIDEO_SOURCE == FROM_FILE
+#elif VIDEO_SOURCE == FROM_FILE
     video.open("/home/jachinshen/Videos/Robo/station-infanity/lefttoright.avi");
     if (video.isOpened())
       cout << "Open Video Successfully!" << endl;
@@ -149,7 +135,7 @@ int main(void) {
       }
 #pragma omp barrier
     }
-#else
+#elif OPENMP_SWITCH == OPENMP_STOP
     Mat frame;
     for (int i = 0; i < 10; ++i) video.read(frame);
     while (video.read(frame)) {
@@ -164,4 +150,27 @@ int main(void) {
     cout << "End!" << endl;
 #endif
   }
+}
+
+string getRecordFileName() {
+  fstream video_file;
+  string video_id_str;
+  int video_id;
+  string file_name;
+
+  // Read record file name.
+  // Add one and write back to promise no same file name.
+  // Otherwise the newer one will cover older one.
+  video_file.open("../record_file_name.txt", ios::in);
+  video_file >> video_id_str;
+  video_file.close();
+
+  video_file.open("../record_file_name.txt", ios::out);
+  video_id = atoi(video_id_str.c_str()) + 1;
+  video_file << video_id;
+  video_file.close();
+
+  file_name = string(getpwuid(getuid())->pw_dir) + "/Videos/Record" +
+              video_id_str + ".avi";
+  return file_name;
 }

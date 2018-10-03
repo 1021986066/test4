@@ -1,36 +1,37 @@
-PROJECT(FindArmor)         
+project(FindArmor)         
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-if(COMMAND cmake_policy)
-      cmake_policy(SET CMP0003 NEW)
-endif(COMMAND cmake_policy)
+cmake_minimum_required(VERSION 2.6)
 
 # convenient for vscode autocomplete
-SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # OpenCV > 3 for KCF tracker
-#SET(OpenCV_DIR ${PROJECT_SOURCE_DIR})
-FIND_PACKAGE( OpenCV 3 REQUIRED )
-#MESSAGE(STATUS "OpenCV_LIBS: ${OpenCV_LIBS}")     
+find_package(OpenCV 3 REQUIRED )
+# message(STATUS "OpenCV_LIBS: ${OpenCV_LIBS}")     
 
 # OpenMP
-FIND_PACKAGE( OpenMP)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -pthread")
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-SET(OpenMP_FLAGS ${OpenMP_CXX_FLAGS})
-SET(OpenMP_LIBS gomp)
+find_package(OpenMP)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -pthread")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+set(OpenMP_FLAGS ${OpenMP_CXX_FLAGS})
+set(OpenMP_LIBS gomp)
 
-SET(CMAKE_BUILD_TYPE "Debug") 
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+set(CMAKE_BUILD_TYPE "Debug") 
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+  message("Debug mode")
+  ADD_DEFINITIONS(-D_DEBUG)
+endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 
 # Declare the target (an executable)
 include_directories( ${PROJECT_SOURCE_DIR}/include)
 include_directories( ${PROJECT_SOURCE_DIR}/src) 
-FILE(GLOB_RECURSE sourcefiles "src/*.cpp")
-ADD_EXECUTABLE(FindArmor  
+file(GLOB_RECURSE sourcefiles "src/*.cpp")
+add_executable(FindArmor  
     main.cpp
     ${sourcefiles}
   )
-TARGET_COMPILE_OPTIONS(FindArmor PRIVATE ${OpenMP_FLAGS})
-TARGET_LINK_LIBRARIES(FindArmor ${OpenCV_LIBS} ${OpenMP_LIBS} /lib/libMVSDK.so)
+target_compile_options(FindArmor PRIVATE ${OpenMP_FLAGS})
+target_link_libraries(FindArmor ${OpenCV_LIBS} ${OpenMP_LIBS} /lib/libMVSDK.so)

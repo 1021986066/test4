@@ -71,6 +71,14 @@ int GlobalShutterCamera::init() {
 }
 
 bool GlobalShutterCamera::read(cv::Mat& src) {
+#if BAYER_HACKING == HACKING_ON
+  return read_raw(src);
+#elif BAYER_HACKING == HACKING_OFF
+  return read_processed(src);
+#endif
+}
+
+bool GlobalShutterCamera::read_processed(cv::Mat& src) {
   if (CameraGetImageBuffer(hCamera, &sFrameInfo, &pbyBuffer, 1000) ==
       CAMERA_STATUS_SUCCESS) {
     // double exposure;

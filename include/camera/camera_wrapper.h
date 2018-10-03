@@ -1,8 +1,8 @@
-#include <iostream>
+#include "bayer_hack.h"
 #include "camera/CameraApi.h"  //相机SDK的API头文件
-#include "ctrl_param.h"
 
 #include <stdio.h>
+#include <iostream>
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
@@ -25,4 +25,5 @@ class GlobalShutterCamera {
   int init();
   bool read(cv::Mat& src);
   bool read_raw(cv::Mat& src);
+  bool read_processed(cv::Mat& src);
 };
