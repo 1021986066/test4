@@ -7,6 +7,26 @@
 - OpenCV（推荐OpenCV3以上版本）
 - libMVSDK.so（全局曝光相机驱动）
 
+## 编译运行
+
+Release模式
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make
+./FindArmor
+```
+
+Debug模式
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+make
+./FindArmor
+```
+
 ## 状态机
 
 - Fast Explore（默认状态）：在机器人快速移动的时候，寻找目标，有一定概率误识别
@@ -52,6 +72,26 @@
 - CMake
 - OpenCV (version 3 recommended)
 - libMVSDK.so (Global Shutter Camera Driver)
+
+## Compile and Run
+
+Release Mode
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make
+./FindArmor
+```
+
+Debug Mode
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+make
+./FindArmor
+```
 
 ## State Machine
 

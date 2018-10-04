@@ -24,17 +24,17 @@
 #endif  //_DEBUG
 
 // the possible side light of armor
-struct Light {
+struct LightBlob {
   cv::RotatedRect rect;
   std::vector<cv::Point> contour;
   float angle;
   float area;
-  Light(cv::RotatedRect& r, std::vector<cv::Point>& c, float& ag, float& a)
+  LightBlob(cv::RotatedRect& r, std::vector<cv::Point>& c, float& ag, float& a)
       : rect(r), contour(c), angle(ag), area(a){};
-  bool operator<(Light& l2) { return this->rect.center.x < l2.rect.center.x; }
-  bool operator<=(Light& l2) { return this->rect.center.x <= l2.rect.center.x; }
-  bool operator>(Light& l2) { return this->rect.center.x > l2.rect.center.x; }
-  bool operator>=(Light& l2) { return this->rect.center.x >= l2.rect.center.x; }
+  bool operator<(LightBlob& l2) { return this->rect.center.x < l2.rect.center.x; }
+  bool operator<=(LightBlob& l2) { return this->rect.center.x <= l2.rect.center.x; }
+  bool operator>(LightBlob& l2) { return this->rect.center.x > l2.rect.center.x; }
+  bool operator>=(LightBlob& l2) { return this->rect.center.x >= l2.rect.center.x; }
 };
 
 // the overall class to detect armor
@@ -111,14 +111,15 @@ class Armor {
   void transferState(FSMState s);
   bool explore(cv::Mat& frame);
   bool fastExplore(cv::Mat& frame);
-  bool fastSelectContours(cv::Mat& frame, std::vector<Light>& lights);
-  bool fastPairContours(std::vector<Light>& lights);
+  bool fastSelectContours(cv::Mat& frame, std::vector<LightBlob>& lights);
+  bool fastPairContours(std::vector<LightBlob>& lights);
   bool slowExplore(cv::Mat& frame);
-  bool slowSelectContours(cv::Mat& frame, std::vector<Light>& lights);
-  bool slowPairContours(std::vector<Light>& lights);
+  bool slowSelectContours(cv::Mat& frame, std::vector<LightBlob>& lights);
+  bool slowPairContours(std::vector<LightBlob>& lights);
   void trackInit(cv::Mat& frame);
   bool track(cv::Mat& frame);
   void splitBayerBG(cv::Mat& frame, cv::Mat& blue, cv::Mat& red);
+  void uartSendTarget(int x, int y, ArmorType armor_type);
 };
 
 #endif  // RM_ARMOR_H_

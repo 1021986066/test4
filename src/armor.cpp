@@ -10,21 +10,15 @@ using std::cout;
 using std::endl;
 using std::vector;
 
-// sort lights by x
-bool less_x(const Light& l1, const Light& l2) {
-  return l1.rect.center.x < l2.rect.center.x;
-}
-
 Armor::Armor()
     : kcf_tracker_(false, true, false, false),
       BORDER_IGNORE(10),
       BOX_EXTRA(10){};
 
 void Armor::init() {
-  // init uart_
+  // init uart
   uart_.init();
 
-  // fps
   // fsm_state_ machine
   fsm_state_ = FAST_EXPLORE;
 
@@ -117,8 +111,7 @@ int Armor::run(Mat& frame) {
     }
 
     if (found_ctr_ >= FAST_EXPLORE_TRACK_THRES) {
-      // TODO: x2 for bayer hacking
-      uart_.sendTarget((armor_box_.x + armor_box_.width / 2),
+      uartSendTarget((armor_box_.x + armor_box_.width / 2),
                        (armor_box_.y + armor_box_.height / 2), armor_type_);
       // init track with this frame
       // otherwise, if use next frame, the area may change
@@ -127,7 +120,7 @@ int Armor::run(Mat& frame) {
       transferState(FAST_TRACK);
     }
     if (unfound_ctr_ >= FAST_EXPLORE_SEND_STOP_THRES) {
-      uart_.sendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND);
+      uartSendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND);
       found_ctr_ = 0;
       unfound_ctr_ = 0;
     }
@@ -145,9 +138,9 @@ int Armor::run(Mat& frame) {
           armor_last_box_.y < center_y &&
           center_y < armor_last_box_.y + armor_last_box_.height) {
         // if center is in box, predict it run at const velocity
-        uart_.sendTarget(2 * x - x_last, y, armor_type_);
+        uartSendTarget(2 * x - x_last, y, armor_type_);
       } else {
-        uart_.sendTarget(x, y, armor_type_);
+        uartSendTarget(x, y, armor_type_);
       }
       ++found_ctr_;
       unfound_ctr_ = 0;
@@ -168,7 +161,7 @@ int Armor::run(Mat& frame) {
       Mat roi = frame.clone()(armor_box_);
       threshold(roi, roi, GRAY_THRESH, 255, THRESH_BINARY);
       if (countNonZero(roi) < SLOW_TRACK_CHECK_RATIO * total_contour_area) {
-        uart_.sendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND);
+        uartSendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND);
         transferState(FAST_EXPLORE);
       }
 
@@ -177,7 +170,7 @@ int Armor::run(Mat& frame) {
       // it means the target beyond the shooting range
       // send NOT FOUND LEAVE IMMEDIATELY during frame 500~800, about 3 seconds
       if (found_ctr_ >= 500) {
-        uart_.sendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND_LEAVE);
+        uartSendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND_LEAVE);
         if (found_ctr_ >= 800) {
           transferState(FAST_EXPLORE);
         }
@@ -205,14 +198,14 @@ int Armor::run(Mat& frame) {
 
     if (found_ctr_ >= SLOW_EXPLORE_TRACK_THRES) {
       cout << "Find: " << armor_type_ << endl;
-      uart_.sendTarget((armor_box_.x + armor_box_.width / 2),
+      uartSendTarget((armor_box_.x + armor_box_.width / 2),
                        (armor_box_.y + armor_box_.height / 2), armor_type_);
       trackInit(frame);
       armor_last_box_ = armor_box_;
       transferState(SLOW_TRACK);
     }
     if (unfound_ctr_ >= SLOW_EXPLORE_SEND_STOP_THRES) {
-      uart_.sendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND_LEAVE);
+      uartSendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND_LEAVE);
       transferState(FAST_EXPLORE);
     }
   } else if (fsm_state_ == SLOW_TRACK) {
@@ -229,9 +222,9 @@ int Armor::run(Mat& frame) {
           armor_last_box_.y < center_y &&
           center_y < armor_last_box_.y + armor_last_box_.height) {
         // if center is in box, predict it run at const velocity
-        uart_.sendTarget(2 * x - x_last, y, armor_type_);
+        uartSendTarget(2 * x - x_last, y, armor_type_);
       } else {
-        uart_.sendTarget(x, y, armor_type_);
+        uartSendTarget(x, y, armor_type_);
       }
       ++found_ctr_;
       unfound_ctr_ = 0;
@@ -246,7 +239,7 @@ int Armor::run(Mat& frame) {
       Mat roi = frame.clone()(armor_box_);
       threshold(roi, roi, GRAY_THRESH, 255, THRESH_BINARY);
       if (countNonZero(roi) < SLOW_TRACK_CHECK_RATIO * total_contour_area) {
-        uart_.sendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND);
+        uartSendTarget(src_width_ / 2, src_height_ / 2, NOT_FOUND);
         transferState(FAST_EXPLORE);
       }
     }
@@ -302,7 +295,7 @@ bool Armor::track(Mat& frame) {
 //#endif
 // vector<vector<Point> > contours;
 // vector<long> areas;
-// vector<Light> lights;
+// vector<LightBlob> lights;
 // findContours(bin, contours,
 // CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
 ////select contours by area, length, width/height
@@ -356,7 +349,7 @@ bool Armor::track(Mat& frame) {
 //|| angle < 90.0 - CONTOUR_ANGLE_MAX)
 // continue;
 ////cout << "push back" << endl;
-// lights.push_back(Light(rec, contours[i], angle, area));
+// lights.push_back(LightBlob(rec, contours[i], angle, area));
 // areas.push_back(area);
 //}
 // if (lights.size() < 2)
@@ -546,12 +539,12 @@ bool Armor::track(Mat& frame) {
 bool Armor::fastExplore(Mat& frame) {
   // lights.clear();
   // areas.clear();
-  vector<Light> lights;
+  vector<LightBlob> lights;
   if (fastSelectContours(frame, lights) == false) return false;
   return fastPairContours(lights);
 }
 
-bool Armor::fastSelectContours(Mat& frame, vector<Light>& lights) {
+bool Armor::fastSelectContours(Mat& frame, vector<LightBlob>& lights) {
   static Mat bin;
   threshold(frame, bin, GRAY_THRESH, 255, THRESH_BINARY);
 #if DRAW == SHOW_ALL
@@ -599,17 +592,17 @@ bool Armor::fastSelectContours(Mat& frame, vector<Light>& lights) {
     float angle = leasq.getAngleh();
     if (angle > 120.0 || angle < 60.0) continue;
     // cout << "push back" << endl;
-    lights.push_back(Light(rec, contours[i], angle, area));
+    lights.push_back(LightBlob(rec, contours[i], angle, area));
     // areas.push_back(area);
   }
   if (lights.size() < 2) return false;
   return true;
 }
 
-bool Armor::fastPairContours(vector<Light>& lights) {
+bool Armor::fastPairContours(vector<LightBlob>& lights) {
   int light1 = -1, light2 = -1;
   float min_similarity = 3.0;
-  sort(lights.begin(), lights.end(), less_x);
+  sort(lights.begin(), lights.end());
   // cout << "lights: " << lights.size() << endl;
   // pair lights by length, distance, angel
   for (unsigned int i = 0; i < lights.size() - 1; ++i) {
@@ -695,12 +688,12 @@ bool Armor::fastPairContours(vector<Light>& lights) {
 }
 
 bool Armor::slowExplore(Mat& frame) {
-  vector<Light> lights;
+  vector<LightBlob> lights;
   if (slowSelectContours(frame, lights) == false) return false;
   return slowPairContours(lights);
 }
 
-bool Armor::slowSelectContours(Mat& frame, vector<Light>& lights) {
+bool Armor::slowSelectContours(Mat& frame, vector<LightBlob>& lights) {
   static Mat bin;
   threshold(frame, bin, GRAY_THRESH, 255, THRESH_BINARY);
 #if DRAW == SHOW_ALL
@@ -752,18 +745,18 @@ bool Armor::slowSelectContours(Mat& frame, vector<Light>& lights) {
     if (angle > 90.0 + CONTOUR_ANGLE_MAX || angle < 90.0 - CONTOUR_ANGLE_MAX)
       continue;
     // cout << "push back" << endl;
-    lights.push_back(Light(rec, contours[i], angle, area));
+    lights.push_back(LightBlob(rec, contours[i], angle, area));
     // areas.push_back(area);
   }
   if (lights.size() < 2) return false;
   return true;
 }
 
-bool Armor::slowPairContours(vector<Light>& lights) {
+bool Armor::slowPairContours(vector<LightBlob>& lights) {
   int light1 = -1, light2 = -1;
   float min_angle = TWIN_ANGEL_MAX;
   float min_distance_n = 2 * SLOW_TWIN_DISTANCE_N_MAX;
-  sort(lights.begin(), lights.end(), less_x);
+  sort(lights.begin(), lights.end());
   // cout << "lights: " << lights.size() << endl;
   // pair lights by length, distance, angel
   for (unsigned int i = 0; i < lights.size() - 1; ++i) {
@@ -886,4 +879,12 @@ void Armor::splitBayerBG(Mat& frame, Mat& blue, Mat& red) {
       bayer_data[1][j] = *data;
     }
   }
+}
+
+void Armor::uartSendTarget(int x, int y, ArmorType armor_type) {
+#if BAYER_HACK == HACKING_OFF
+  uart_.sendTarget(x, y, armor_type_table_[armor_type]);
+#elif BAYER_HACK == HACKING_ON
+  uart_.sendTarget(2 * x, 2 * y, armor_type_table_[armor_type]);
+#endif
 }

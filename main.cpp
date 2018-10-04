@@ -50,19 +50,8 @@ using std::string;
 #define RECORD RECORD_OFF
 
 string getRecordFileName();
-
-double tic() {
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  return ((float)t.tv_sec + ((float)t.tv_usec) / 1000000.);
-}
-
-void printFps() {
-  static double running_time = tic();
-  double fps = 1 / (tic() - running_time);
-  cout << "fps: " << fps << endl;
-  running_time = tic();
-}
+double tic();
+void printFps();
 
 int main(void) {
   // The main while loop should only run once if everything is okay.
@@ -81,7 +70,7 @@ int main(void) {
     string filename = getRecordFileName();
     cout << "Record File Name: " << file_name << endl;
     VideoWriter g_writer;
-    // PIM! format occupys little space.
+    // PIM1 format occupys little space.
     // 120fps, 640x480 resolution, based on the camera.
     // is_color=false because of the gray camera.
     g_writer.open(file_name, CV_FOURCC('P', 'I', 'M', '1'), 120,
@@ -189,4 +178,17 @@ string getRecordFileName() {
   file_name = string(getpwuid(getuid())->pw_dir) + "/Videos/Record" +
               video_id_str + ".avi";
   return file_name;
+}
+
+double tic() {
+  struct timeval t;
+  gettimeofday(&t, NULL);
+  return ((float)t.tv_sec + ((float)t.tv_usec) / 1000000.);
+}
+
+void printFps() {
+  static double running_time = tic();
+  double fps = 1 / (tic() - running_time);
+  cout << "fps: " << fps << endl;
+  running_time = tic();
 }
