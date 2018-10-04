@@ -14,8 +14,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#define BAYER_HACK HACKING_ON
-
 #define SHOW_NO 0
 #define SHOW_ALL 1
 
@@ -24,11 +22,6 @@
 #else  //_DEBUG
 #define DRAW NO_SHOW
 #endif  //_DEBUG
-
-#define NOT_FOUND_LEAVE -1
-#define NOT_FOUND 0
-#define SMALL_ARMOR 1
-#define LARGE_ARMOR 2
 
 // the possible side light of armor
 struct Light {
@@ -58,7 +51,6 @@ class Armor {
   cv::Rect2d armor_last_box_;
   KCFTracker kcf_tracker_;
   Uart uart_;
-  double running_time_;
   long found_ctr_;
   long unfound_ctr_;
 
@@ -101,7 +93,14 @@ class Armor {
   int SLOW_TRACK_EXPLORE_THRES;
 
   long total_contour_area;
-  int armor_type_;
+  enum ArmorType {
+    NOT_FOUND_LEAVE,
+    NOT_FOUND,
+    SMALL_ARMOR,
+    LARGE_ARMOR,
+    ARMOR_TYPE_SIZE
+  } armor_type_;
+  char armor_type_table_[ARMOR_TYPE_SIZE];
 
  public:
   Armor();

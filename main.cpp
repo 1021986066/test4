@@ -51,6 +51,19 @@ using std::string;
 
 string getRecordFileName();
 
+double tic() {
+  struct timeval t;
+  gettimeofday(&t, NULL);
+  return ((float)t.tv_sec + ((float)t.tv_usec) / 1000000.);
+}
+
+void printFps() {
+  static double running_time = tic();
+  double fps = 1 / (tic() - running_time);
+  cout << "fps: " << fps << endl;
+  running_time = tic();
+}
+
 int main(void) {
   // The main while loop should only run once if everything is okay.
   // If something wrong happens(like the global shutter camera issues), it will
@@ -107,6 +120,7 @@ int main(void) {
     for (int i = 0; i < 10; ++i) video.read(frame2);
 
     while (ok) {
+      printFps();
 #pragma omp parallel sections
       {
 #pragma omp section
@@ -121,6 +135,7 @@ int main(void) {
       }
       // wait for both section completed
 #pragma omp barrier
+      printFps();
 #pragma omp parallel sections
       {
 #pragma omp section
@@ -139,6 +154,7 @@ int main(void) {
     Mat frame;
     for (int i = 0; i < 10; ++i) video.read(frame);
     while (video.read(frame)) {
+      printFps();
       imshow("color", frame);
 #if RECORD == RECORD_ON
       g_writer.write(frame);

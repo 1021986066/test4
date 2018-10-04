@@ -1,6 +1,8 @@
 #include "uart.h"
 
 using std::cout;
+using std::cerr;
+using std::clog;
 using std::dec;
 using std::endl;
 using std::hex;
@@ -103,46 +105,30 @@ void Uart::init() {
   buf[6] = 0xA7;
 }
 
-void Uart::sendTarget(int target_x, int target_y, int is_found) {
+void Uart::sendTarget(int target_x, int target_y, int found_flag) {
   if (target_x < 0 || target_x > 640 || target_y < 0 || target_y > 480) {
-    is_found = 0;
+    cerr << "Target x or y exceed 640 or 480! Reset to 320 and 240" << endl;
+    found_flag = 0xA3;
     target_x = 320;
     target_y = 240;
   }
 
   buf[1] = (target_x >> 8) & 0xFF;
   buf[2] = target_x & 0xFF;
-  switch (is_found) {
-    case 2:
-      buf[3] = 0xA8;
-      break;
-    case 1:
-      buf[3] = 0xA6;
-      break;
-    case 0:
-      buf[3] = 0xA4;
-      break;
-    case -1:
-      buf[3] = 0xA3;
-      break;
-    default:
-      cout << "Invalid Instruction!" << endl;
-      buf[3] = 0xA4;
-      break;
-  }
+  buf[3] = found_flag & 0xFF;
   buf[4] = (target_y >> 8) & 0xFF;
   buf[5] = target_y & 0xFF;
 
 #ifdef _DEBUG
-  cout << dec << "x:" << target_x << " y:" << target_y << endl;
+  clog << dec << "x:" << target_x << " y:" << target_y << endl;
   for (int i = 0; i < 7; ++i) {
-    cout << hex << (unsigned int)(unsigned char)buf[i] << " ";
+    clog << hex << (unsigned int)(unsigned char)buf[i] << " ";
   }
-  cout << endl;
+  clog << endl;
 #if PLATFORM == MANIFOLD
   char receive[30] = {0};
   read(fd, receive, 50);
-  cout << "Receive: " << receive << endl;
+  clog << "Receive: " << receive << endl;
 #endif  // PLATFORM == MANIFOLD
 #endif  //_DEBUG
 

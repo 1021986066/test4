@@ -9,11 +9,6 @@ using namespace cv;
 using std::cout;
 using std::endl;
 using std::vector;
-double tic() {
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  return ((float)t.tv_sec + ((float)t.tv_usec) / 1000000.);
-}
 
 // sort lights by x
 bool less_x(const Light& l1, const Light& l2) {
@@ -30,8 +25,6 @@ void Armor::init() {
   uart_.init();
 
   // fps
-  running_time_ = tic();
-
   // fsm_state_ machine
   fsm_state_ = FAST_EXPLORE;
 
@@ -46,7 +39,7 @@ void Armor::init() {
 #endif
 
 #if BAYER_HACK == HACKING_OFF
-  GRAY_THRESH = 240;
+  GRAY_THRESH = 230;
 #elif BAYER_HACK == HACKING_ON
   GRAY_THRESH = 10;
 #endif
@@ -92,6 +85,10 @@ void Armor::init() {
   SLOW_TRACK_EXPLORE_THRES = 3;
 
   armor_type_ = NOT_FOUND;
+  armor_type_table_[NOT_FOUND_LEAVE] = 0xA3;
+  armor_type_table_[NOT_FOUND] = 0xA4;
+  armor_type_table_[SMALL_ARMOR] = 0xA6;
+  armor_type_table_[LARGE_ARMOR] = 0xA8;
 }
 
 int Armor::run(Mat& frame) {
@@ -121,8 +118,8 @@ int Armor::run(Mat& frame) {
 
     if (found_ctr_ >= FAST_EXPLORE_TRACK_THRES) {
       // TODO: x2 for bayer hacking
-      uart_.sendTarget((armor_box_.x + armor_box_.width / 2), (armor_box_.y + armor_box_.height / 2),
-                      armor_type_);
+      uart_.sendTarget((armor_box_.x + armor_box_.width / 2),
+                       (armor_box_.y + armor_box_.height / 2), armor_type_);
       // init track with this frame
       // otherwise, if use next frame, the area may change
       trackInit(frame);
@@ -143,8 +140,10 @@ int Armor::run(Mat& frame) {
       int center_y = 2 * y - src_height_ / 2;
       // Assume the box run at const velocity
       // Predict if the center is still in box at next frame
-      if (armor_last_box_.x < center_x && center_x < armor_last_box_.x + armor_last_box_.width &&
-          armor_last_box_.y < center_y && center_y < armor_last_box_.y + armor_last_box_.height) {
+      if (armor_last_box_.x < center_x &&
+          center_x < armor_last_box_.x + armor_last_box_.width &&
+          armor_last_box_.y < center_y &&
+          center_y < armor_last_box_.y + armor_last_box_.height) {
         // if center is in box, predict it run at const velocity
         uart_.sendTarget(2 * x - x_last, y, armor_type_);
       } else {
@@ -206,8 +205,8 @@ int Armor::run(Mat& frame) {
 
     if (found_ctr_ >= SLOW_EXPLORE_TRACK_THRES) {
       cout << "Find: " << armor_type_ << endl;
-      uart_.sendTarget((armor_box_.x + armor_box_.width / 2), (armor_box_.y + armor_box_.height / 2),
-                      armor_type_);
+      uart_.sendTarget((armor_box_.x + armor_box_.width / 2),
+                       (armor_box_.y + armor_box_.height / 2), armor_type_);
       trackInit(frame);
       armor_last_box_ = armor_box_;
       transferState(SLOW_TRACK);
@@ -225,8 +224,10 @@ int Armor::run(Mat& frame) {
       int center_y = 2 * y - src_height_ / 2;
       // Assume the box run at const velocity
       // Predict if the center is still in box at next frame
-      if (armor_last_box_.x < center_x && center_x < armor_last_box_.x + armor_last_box_.width &&
-          armor_last_box_.y < center_y && center_y < armor_last_box_.y + armor_last_box_.height) {
+      if (armor_last_box_.x < center_x &&
+          center_x < armor_last_box_.x + armor_last_box_.width &&
+          armor_last_box_.y < center_y &&
+          center_y < armor_last_box_.y + armor_last_box_.height) {
         // if center is in box, predict it run at const velocity
         uart_.sendTarget(2 * x - x_last, y, armor_type_);
       } else {
@@ -261,9 +262,6 @@ int Armor::run(Mat& frame) {
     imshow("Tracking", frame);
 #endif
   }
-  float fps = 1 / (tic() - running_time_);
-  cout << "fps: " << fps << endl;
-  running_time_ = tic();
   return 0;
 }
 
