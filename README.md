@@ -58,7 +58,7 @@ make
 
 ## 代码格式
 
-[Google Style] (https://zh-google-styleguide.readthedocs.io/en/latest/google-cpp-styleguide/contents/) 
+[Google Style](https://zh-google-styleguide.readthedocs.io/en/latest/google-cpp-styleguide/contents/) 
 
 ## PS
 
@@ -125,6 +125,10 @@ make
 - Use Object Detection to explore the armor
 - Recognize the digit in the center
 - Use two camera at the same time
+
+## Code Style
+
+[Google Style](https://zh-google-styleguide.readthedocs.io/en/latest/google-cpp-styleguide/contents/) 
 
 ## PS
 
