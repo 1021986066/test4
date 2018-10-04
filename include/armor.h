@@ -105,20 +105,20 @@ class Armor {
  public:
   Armor();
   void init();
-  int run(cv::Mat& frame);
+  int run(cv::Mat& src);
 
  private:
   void transferState(FSMState s);
-  bool explore(cv::Mat& frame);
-  bool fastExplore(cv::Mat& frame);
-  bool fastSelectContours(cv::Mat& frame, std::vector<LightBlob>& lights);
+  bool explore(cv::Mat& src);
+  bool fastExplore(cv::Mat& src);
+  bool fastSelectContours(cv::Mat& src, std::vector<LightBlob>& lights);
   bool fastPairContours(std::vector<LightBlob>& lights);
-  bool slowExplore(cv::Mat& frame);
-  bool slowSelectContours(cv::Mat& frame, std::vector<LightBlob>& lights);
+  bool slowExplore(cv::Mat& src);
+  bool slowSelectContours(cv::Mat& src, std::vector<LightBlob>& lights);
   bool slowPairContours(std::vector<LightBlob>& lights);
-  void trackInit(cv::Mat& frame);
-  bool track(cv::Mat& frame);
-  void splitBayerBG(cv::Mat& frame, cv::Mat& blue, cv::Mat& red);
+  void trackInit(cv::Mat& src);
+  bool track(cv::Mat& src);
+  void splitBayerBG(cv::Mat& src, cv::Mat& blue, cv::Mat& red);
   void uartSendTarget(int x, int y, ArmorType armor_type);
 };
 
