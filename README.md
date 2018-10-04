@@ -56,6 +56,10 @@ make
 - 识别中间贴纸的数字
 - 同时使用两个摄像头
 
+## 代码格式
+
+[Google Style] (https://zh-google-styleguide.readthedocs.io/en/latest/google-cpp-styleguide/contents/) 
+
 ## PS
 
 - 我们使用了MindVision的全局曝光相机，驱动是专有的。在`include/camera_wrapper.h`里对驱动进行了包装。
