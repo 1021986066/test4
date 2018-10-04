@@ -58,11 +58,11 @@ make
 
 ## PS
 
-- 我们使用了MindVision的全局曝光相机，驱动是专有的。在`include/GlobalCamera.h`里对驱动进行了包装。
+- 我们使用了MindVision的全局曝光相机，驱动是专有的。在`include/camera_wrapper.h`里对驱动进行了包装。
 - 为了提高速度，没有使用OpenCV自带的KCFTracker，另外找了一个CPP版本，被包装在`src/KCFTracker.cpp`里。
-- 为了便于区分自己电脑的开发环境和妙算上的部署环境，在`precom.h`里设置了宏，通过是否ARM架构来区分。
-- `precom.h`里面还有一些宏来控制OpenMP，显示中间图像和录像。其中OpenMP和显示中间图像是互斥的。
-- 为了优化彩色相机的速度，直接处理了原始的拜耳阵列，可以通过宏`BAYER_HACKING`控制。
+- 为了便于区分自己电脑的开发环境和妙算上的部署环境，在`include/platform.h`里设置了宏，通过是否ARM架构来区分。
+- `main.cpp`里面还有一些宏来控制OpenMP，显示中间图像和录像。其中OpenMP和显示中间图像是互斥的。默认Debug模式下显示中间图像，关闭OpenMP，Release模式下不显示中间图像，开启OpenMP。
+- 为了优化彩色相机的速度，直接处理了原始的拜耳阵列，可以通过`include/bayer_hack.h`中的宏`BAYER_HACKING`控制。涉及到的地方有相机驱动（是否传输原始图像）和Armor类（参数改变）。
 
 ---
 
